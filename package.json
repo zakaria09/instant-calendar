@@ -6,7 +6,10 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "docker:dev": "docker compose up --build",
+    "docker:stop": "docker compose down",
+    "docker:push": "docker buildx build --platform linux/amd64 -t ghcr.io/zakaria09/instant-calendar:latest --push ."
   },
   "dependencies": {
     "lucide-react": "^1.7.0",
