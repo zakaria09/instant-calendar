@@ -45,3 +45,4 @@ terraform.tfvarsterraform.tfstate
 terraform.tfstate
 terraform.tfvars
 *.tfvars
+terraform.tfstate.backup
