@@ -40,4 +40,8 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
+terraform.tfvarsterraform.tfstate
+.terraform/
+terraform.tfstate
 terraform.tfvars
+*.tfvars
