@@ -7,13 +7,13 @@ import journal from '@/public/images/journal.png';
 export default function Home() {
   return (
     <div className='container mx-auto px-8 sm:px-0'>
-      <section className='py-16'>
+      <section className='py-8'>
         <div className='flex flex-col-reverse md:flex-row gap-8 lg:gap-0 justify-between'>
           <div className='flex flex-col py-8 justify-between gap-8'>
             <h1 className='sm:text-6xl text-5xl font-light'>
               Scheduling,{' '}
               <span className='block text-blue-500 italic font-bold underline decoration-blue-500'>
-                Simplified.
+                Made Simple.
               </span>
             </h1>
             <p className='text-base text-slate-800 max-w-md'>

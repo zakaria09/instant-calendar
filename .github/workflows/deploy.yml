@@ -34,3 +34,4 @@ jobs:
             docker stop instant-calendar || true
             docker rm instant-calendar || true
             docker run -d --name instant-calendar -p 3000:3000 ghcr.io/zakaria09/instant-calendar:latest
+            docker image prune -f
