@@ -1,0 +1,22 @@
+{
+  "name": "@repo/api",
+  "version": "0.0.1",
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "build": "tsc",
+    "start": "node dist/index.js"
+  },
+  "dependencies": {
+    "better-auth": "^1.6.2",
+    "drizzle-orm": "^0.45.2",
+    "hono": "^4.12.12",
+    "pg": "^8.20.0",
+    "resend": "^6.10.0"
+  },
+  "devDependencies": {
+    "@types/pg": "^8.20.0",
+    "drizzle-kit": "^0.31.10",
+    "tsx": "^4.21.0",
+    "typescript": "^5.9.3"
+  }
+}

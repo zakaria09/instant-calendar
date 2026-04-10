@@ -16,23 +16,96 @@ jobs:
       - name: Log in to GHCR
         run: echo "${{ secrets.GHCR_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
 
-      - name: Build and push image
+      - name: Build and push images
         run: |
           docker buildx build \
             --platform linux/amd64 \
-            -t ghcr.io/zakaria09/instant-calendar:latest \
+            -t ghcr.io/zakaria09/instant-calendar-web:latest \
             -f apps/web/Dockerfile \
+            --push .
+
+          docker buildx build \
+            --platform linux/amd64 \
+            -t ghcr.io/zakaria09/instant-calendar-api:latest \
+            -f apps/api/Dockerfile \
             --push .
 
       - name: Deploy to VPS
         uses: appleboy/ssh-action@v1
+        env:
+          POSTGRES_USER: ${{ secrets.POSTGRES_USER }}
+          POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
+          POSTGRES_DB: ${{ secrets.POSTGRES_DB }}
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+          EMAIL_FROM: ${{ secrets.EMAIL_FROM }}
+          WEB_URL: ${{ secrets.WEB_URL }}
         with:
           host: ${{ secrets.VPS_HOST }}
           username: root
           key: ${{ secrets.VPS_SSH_KEY }}
+          envs: POSTGRES_USER,POSTGRES_PASSWORD,POSTGRES_DB,RESEND_API_KEY,EMAIL_FROM,WEB_URL
           script: |
-            docker pull ghcr.io/zakaria09/instant-calendar:latest
-            docker stop instant-calendar || true
-            docker rm instant-calendar || true
-            docker run -d --name instant-calendar -p 3000:3000 ghcr.io/zakaria09/instant-calendar:latest
+            cat > /root/instant-calendar.env <<ENV
+            DATABASE_URL=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}
+            POSTGRES_USER=${POSTGRES_USER}
+            POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+            POSTGRES_DB=${POSTGRES_DB}
+            RESEND_API_KEY=${RESEND_API_KEY}
+            EMAIL_FROM=${EMAIL_FROM}
+            WEB_URL=${WEB_URL}
+            ENV
+            # Write env file from secrets
+            cat > /root/instant-calendar.env <<ENV
+            DATABASE_URL=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}
+            POSTGRES_USER=${POSTGRES_USER}
+            POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+            POSTGRES_DB=${POSTGRES_DB}
+            RESEND_API_KEY=${RESEND_API_KEY}
+            EMAIL_FROM=${EMAIL_FROM}
+            WEB_URL=${WEB_URL}
+            ENV
+
+            # Write compose file
+            cat > /root/docker-compose.yml <<'COMPOSE'
+            services:
+              web:
+                image: ghcr.io/zakaria09/instant-calendar-web:latest
+                ports:
+                  - "3000:3000"
+                env_file: /root/instant-calendar.env
+
+              api:
+                image: ghcr.io/zakaria09/instant-calendar-api:latest
+                ports:
+                  - "3001:3001"
+                env_file: /root/instant-calendar.env
+                depends_on:
+                  db:
+                    condition: service_healthy
+
+              db:
+                image: postgres:16-alpine
+                env_file: /root/instant-calendar.env
+                volumes:
+                  - postgres_data:/var/lib/postgresql/data
+                healthcheck:
+                  test: ["CMD-SHELL", "pg_isready -U postgres"]
+                  interval: 5s
+                  timeout: 5s
+                  retries: 5
+
+            volumes:
+              postgres_data:
+            COMPOSE
+
+            # Pull latest images
+            docker pull ghcr.io/zakaria09/instant-calendar-web:latest
+            docker pull ghcr.io/zakaria09/instant-calendar-api:latest
+
+            # Restart
+            cd /root
+            docker compose down
+            docker compose up -d
+
+            # Cleanup
             docker image prune -f

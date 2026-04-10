@@ -1,0 +1,13 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "outDir": "dist",
+    "rootDir": "../../",
+    "paths": {
+      "@repo/types": ["../../packages/types/src/index.ts"],
+      "@repo/db": ["../../packages/db/src/index.ts"]
+    }
+  },
+  "include": ["src/**/*", "../../packages/**/*"],
+  "exclude": ["node_modules", "dist"]
+}

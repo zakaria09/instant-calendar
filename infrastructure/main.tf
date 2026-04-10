@@ -34,4 +34,13 @@ resource "digitalocean_droplet" "web" {
   size   = "s-1vcpu-1gb"
   image  = "ubuntu-24-04-x64"
   ssh_keys = [data.digitalocean_ssh_key.my_key.id]
+
+  user_data = <<-EOF
+    #!/bin/bash
+    apt-get update -y
+    apt-get install -y docker.io docker-compose-plugin
+    systemctl enable docker
+    systemctl start docker
+    usermod -aG docker root
+  EOF
 }
