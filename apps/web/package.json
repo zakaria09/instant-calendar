@@ -9,6 +9,8 @@
     "lint": "eslint"
   },
   "dependencies": {
+    "@repo/db": "workspace:*",
+    "@repo/types": "workspace:*",
     "better-auth": "^1.6.2",
     "lucide-react": "^1.7.0",
     "next": "16.2.2",

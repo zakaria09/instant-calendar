@@ -4,8 +4,6 @@
     "plugins": [{ "name": "next" }],
     "paths": {
       "@/*": ["./*"],
-      "@repo/types": ["../../packages/types/src/index.ts"],
-      "@repo/db": ["../../packages/db/src/index.ts"]
     }
   },
   "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts"],

@@ -7,6 +7,8 @@
     "start": "node dist/index.js"
   },
   "dependencies": {
+    "@repo/db": "workspace:*",
+    "@repo/types": "workspace:*",
     "better-auth": "^1.6.2",
     "drizzle-orm": "^0.45.2",
     "hono": "^4.12.12",
