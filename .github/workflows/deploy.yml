@@ -21,6 +21,7 @@ jobs:
           docker buildx build \
             --platform linux/amd64 \
             -t ghcr.io/zakaria09/instant-calendar:latest \
+            -f apps/web/Dockerfile \
             --push .
 
       - name: Deploy to VPS
