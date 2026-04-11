@@ -3,6 +3,13 @@
   "compilerOptions": {
     "outDir": "dist",
     "rootDir": "../../",
+    "moduleResolution": "nodenext",
+    "module": "nodenext",
+    "noEmit": false,
+    "typeRoots": [
+      "../../node_modules/@types",
+      "../../node_modules"
+    ]
   },
   "include": ["src/**/*", "../../packages/**/*"],
   "exclude": ["node_modules", "dist"]

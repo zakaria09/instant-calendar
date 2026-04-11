@@ -28,4 +28,4 @@ ENV NODE_ENV=production
 
 EXPOSE 3001
 
-CMD ["npx", "tsx", "apps/api/src/index.ts"]
+CMD ["/app/apps/api/node_modules/.bin/tsx", "apps/api/src/index.ts"]

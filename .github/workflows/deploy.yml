@@ -22,6 +22,8 @@ jobs:
             --platform linux/amd64 \
             -t ghcr.io/zakaria09/instant-calendar-web:latest \
             -f apps/web/Dockerfile \
+            --build-arg NEXT_PUBLIC_API_URL=${{ secrets.NEXT_PUBLIC_API_URL }} \
+            --build-arg NEXT_PUBLIC_APP_URL=${{ secrets.NEXT_PUBLIC_APP_URL }} \
             --push .
 
           docker buildx build \
@@ -29,6 +31,7 @@ jobs:
             -t ghcr.io/zakaria09/instant-calendar-api:latest \
             -f apps/api/Dockerfile \
             --push .
+
 
       - name: Deploy to VPS
         uses: appleboy/ssh-action@v1
@@ -39,11 +42,15 @@ jobs:
           RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
           EMAIL_FROM: ${{ secrets.EMAIL_FROM }}
           WEB_URL: ${{ secrets.WEB_URL }}
+          BETTER_AUTH_URL: ${{ secrets.BETTER_AUTH_URL }}
+          BETTER_AUTH_SECRET: ${{ secrets.BETTER_AUTH_SECRET }}
+          NEXT_PUBLIC_API_URL: ${{ secrets.NEXT_PUBLIC_API_URL }}
+          NEXT_PUBLIC_APP_URL: ${{ secrets.NEXT_PUBLIC_APP_URL }}
         with:
           host: ${{ secrets.VPS_HOST }}
           username: root
           key: ${{ secrets.VPS_SSH_KEY }}
-          envs: POSTGRES_USER,POSTGRES_PASSWORD,POSTGRES_DB,RESEND_API_KEY,EMAIL_FROM,WEB_URL
+          envs: POSTGRES_USER,POSTGRES_PASSWORD,POSTGRES_DB,RESEND_API_KEY,EMAIL_FROM,WEB_URL,BETTER_AUTH_URL,BETTER_AUTH_SECRET,NEXT_PUBLIC_API_URL,NEXT_PUBLIC_APP_URL
           script: |
             cat > /root/instant-calendar.env <<ENV
             DATABASE_URL=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}
@@ -53,19 +60,12 @@ jobs:
             RESEND_API_KEY=${RESEND_API_KEY}
             EMAIL_FROM=${EMAIL_FROM}
             WEB_URL=${WEB_URL}
-            ENV
-            # Write env file from secrets
-            cat > /root/instant-calendar.env <<ENV
-            DATABASE_URL=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}
-            POSTGRES_USER=${POSTGRES_USER}
-            POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
-            POSTGRES_DB=${POSTGRES_DB}
-            RESEND_API_KEY=${RESEND_API_KEY}
-            EMAIL_FROM=${EMAIL_FROM}
-            WEB_URL=${WEB_URL}
+            BETTER_AUTH_URL=${BETTER_AUTH_URL}
+            BETTER_AUTH_SECRET=${BETTER_AUTH_SECRET}
+            NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL}
+            NEXT_PUBLIC_APP_URL=${NEXT_PUBLIC_APP_URL}
             ENV
 
-            # Write compose file
             cat > /root/docker-compose.yml <<'COMPOSE'
             services:
               web:
@@ -98,14 +98,11 @@ jobs:
               postgres_data:
             COMPOSE
 
-            # Pull latest images
             docker pull ghcr.io/zakaria09/instant-calendar-web:latest
             docker pull ghcr.io/zakaria09/instant-calendar-api:latest
 
-            # Restart
             cd /root
             docker compose down
             docker compose up -d
 
-            # Cleanup
             docker image prune -f

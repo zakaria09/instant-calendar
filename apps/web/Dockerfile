@@ -7,6 +7,14 @@ FROM node:${NODE_VERSION} AS dependencies
 
 WORKDIR /app
 
+# Add these after the ARG NODE_VERSION line at the top
+ARG NEXT_PUBLIC_API_URL
+ARG NEXT_PUBLIC_APP_URL
+
+# Then set them as ENV before the build step so Next.js picks them up
+ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
+ENV NEXT_PUBLIC_APP_URL=$NEXT_PUBLIC_APP_URL
+
 # Copy workspace files
 COPY pnpm-workspace.yaml ./
 COPY pnpm-lock.yaml ./
@@ -42,7 +50,7 @@ COPY --from=dependencies /app ./
 
 ENV NODE_ENV=production
 
-RUN corepack enable pnpm && pnpm --filter @repo/web build
+RUN corepack enable pnpm && pnpm --filter @apps/web build
 
 # ============================================
 # Stage 3: Run Next.js application

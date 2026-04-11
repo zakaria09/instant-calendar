@@ -2,8 +2,8 @@
   "name": "instant-calendar",
   "private": true,
   "scripts": {
-    "dev": "concurrently \"pnpm --filter @repo/web dev\" \"pnpm --filter @repo/api dev\"",
-    "build": "pnpm --filter @repo/web build && pnpm --filter @repo/api build",
+    "dev": "concurrently \"pnpm --filter @apps/web dev\" \"pnpm --filter @apps/api dev\"",
+    "build": "pnpm --filter @apps/web build && pnpm --filter @apps/api build",
     "docker:dev": "docker compose up --build",
     "docker:stop": "docker compose down",
     "docker:push": "docker buildx build --platform linux/amd64 -t ghcr.io/zakaria09/instant-calendar:latest --push -f apps/web/Dockerfile ."

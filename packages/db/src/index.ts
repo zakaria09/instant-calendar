@@ -1,6 +1,8 @@
+import 'dotenv/config'
 import { drizzle } from 'drizzle-orm/node-postgres'
 import { Pool } from 'pg'
 import * as schema from './schema'
+import * as authSchema from './auth-schema'
 
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL!,
@@ -8,3 +10,4 @@ const pool = new Pool({
 
 export const db = drizzle(pool, { schema })
 export * from './schema'
+export * from './auth-schema'

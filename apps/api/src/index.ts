@@ -1,6 +1,8 @@
+import 'dotenv/config'
 import { Hono } from 'hono'
 import { cors } from 'hono/cors'
 import { logger } from 'hono/logger'
+import { serve } from '@hono/node-server'
 import { auth } from './lib/auth'
 
 const app = new Hono()
@@ -23,7 +25,9 @@ app.get('/api/health', (c) => c.json({ ok: true }))
 
 export type AppType = typeof app
 
-export default {
-  port: process.env.PORT ?? 3001,
+serve({
   fetch: app.fetch,
-}
+  port: Number(process.env.PORT) ?? 3001,
+}, (info) => {
+  console.log(`API running on http://localhost:${info.port}`)
+})
