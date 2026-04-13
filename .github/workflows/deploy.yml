@@ -32,6 +32,71 @@ jobs:
             -f apps/api/Dockerfile \
             --push .
 
+      - name: Verify images
+        run: |
+          # Create a test network
+          docker network create test-network
+
+            # Start API container
+            docker run --rm -d --name test-api \
+              --network test-network \
+              -p 3001:3001 \
+              -e DATABASE_URL=postgresql://postgres:postgres@localhost:5432/test \
+              -e BETTER_AUTH_SECRET=test-secret \
+              -e BETTER_AUTH_URL=http://localhost:3001 \
+              -e WEB_URL=http://localhost:3000 \
+              -e RESEND_API_KEY=test \
+              -e EMAIL_FROM=test@test.com \
+              -e PORT=3001 \
+              ghcr.io/zakaria09/instant-calendar-api:latest
+
+            # Wait up to 30 seconds for the health endpoint to respond
+            echo "Waiting for API to be healthy..."
+            for i in $(seq 1 30); do
+              if curl -sf http://localhost:3001/api/health; then
+                echo "API is healthy"
+                break
+              fi
+              if [ $i -eq 30 ]; then
+                echo "API failed to become healthy"
+                docker logs test-api
+                docker stop test-api
+                docker network rm test-network
+                exit 1
+              fi
+              sleep 1
+            done
+
+            docker stop test-api
+
+            # Start web container
+            docker run --rm -d --name test-web \
+              --network test-network \
+              -p 3000:3000 \
+              -e PORT=3000 \
+              ghcr.io/zakaria09/instant-calendar-web:latest
+
+            # Wait up to 30 seconds for web to respond
+            echo "Waiting for web to be healthy..."
+            for i in $(seq 1 30); do
+              if curl -sf http://localhost:3000; then
+                echo "Web is healthy"
+                break
+              fi
+              if [ $i -eq 30 ]; then
+                echo "Web failed to become healthy"
+                docker logs test-web
+                docker stop test-web
+                docker network rm test-network
+                exit 1
+              fi
+              sleep 1
+            done
+
+            docker stop test-web
+            docker network rm test-network
+
+
       - name: Deploy to VPS
         uses: appleboy/ssh-action@v1
         env:
