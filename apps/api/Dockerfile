@@ -33,11 +33,16 @@ FROM node:${NODE_VERSION} AS deploy
 
 WORKDIR /app
 
-COPY --from=dependencies /app/node_modules ./node_modules
-COPY --from=builder /app/apps/api/dist ./dist
-COPY --from=builder /app/packages/db/drizzle ./packages/db/drizzle
-COPY --from=builder /app/package.json ./
-COPY --from=builder /app/apps/api/package.json ./apps/api/
+COPY --from=dependencies /app ./
+
+# Remove TypeScript source from workspace packages to prevent node module stripping errors
+RUN rm -rf packages/types/src packages/db/src
+
+# Copy compiled dist to ensure it's available for pnpm deploy
+COPY --from=builder /app/packages/types/dist ./packages/types/dist
+COPY --from=builder /app/packages/db/dist ./packages/db/dist
+
+RUN corepack enable pnpm && pnpm deploy --filter @apps/api --prod --legacy /app/deploy
 
 FROM node:${NODE_VERSION} AS runner
 
@@ -45,7 +50,9 @@ WORKDIR /app
 
 ENV NODE_ENV=production
 
-COPY --from=deploy /app ./
+COPY --from=deploy /app/deploy ./
+COPY --from=builder /app/apps/api/dist ./dist
+COPY --from=builder /app/packages/db/drizzle ./packages/db/drizzle
 
 EXPOSE 3001
 
