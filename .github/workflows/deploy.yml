@@ -27,6 +27,7 @@ jobs:
             --push .
 
           docker buildx build \
+            --no-cache \
             --platform linux/amd64 \
             -t ghcr.io/zakaria09/instant-calendar-api:latest \
             -f apps/api/Dockerfile \

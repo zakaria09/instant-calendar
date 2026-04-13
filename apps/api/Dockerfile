@@ -24,7 +24,20 @@ WORKDIR /app
 
 COPY --from=dependencies /app ./
 
-RUN corepack enable pnpm && pnpm --filter @apps/api build
+# Build db first then api
+RUN corepack enable pnpm && \
+  pnpm --filter @packages/db build && \
+  pnpm --filter @apps/api build
+
+FROM node:${NODE_VERSION} AS deploy
+
+WORKDIR /app
+
+COPY --from=dependencies /app ./
+# Copy compiled db so pnpm deploy uses the compiled version
+COPY --from=builder /app/packages/db/dist ./packages/db/dist
+
+RUN corepack enable pnpm && pnpm deploy --filter @apps/api --prod --legacy /app/deploy
 
 FROM node:${NODE_VERSION} AS runner
 
@@ -32,10 +45,8 @@ WORKDIR /app
 
 ENV NODE_ENV=production
 
-
+COPY --from=deploy /app/deploy ./
 COPY --from=builder /app/apps/api/dist ./dist
-COPY --from=builder /app/node_modules ./node_modules
-COPY --from=builder /app/apps/api/node_modules ./apps/api/node_modules
 COPY --from=builder /app/packages/db/drizzle ./packages/db/drizzle
 
 EXPOSE 3001

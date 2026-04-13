@@ -2,17 +2,16 @@
   "name": "@apps/api",
   "version": "0.0.1",
   "scripts": {
-    "dev": "tsx watch src/index.ts",
+    "dev": "tsx watch --env-file=.env src/index.ts",
     "build": "tsc --project tsconfig.json",
     "start": "node dist/index.js",
     "migrate": "tsx src/migrate.ts"
   },
   "dependencies": {
     "@hono/node-server": "^1.19.13",
-    "@packages/types": "workspace:*",
     "@packages/db": "workspace:*",
+    "@packages/types": "workspace:*",
     "better-auth": "^1.6.2",
-    "dotenv": "^17.4.1",
     "drizzle-orm": "^0.45.2",
     "hono": "^4.12.12",
     "pg": "^8.20.0",
