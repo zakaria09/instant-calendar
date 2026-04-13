@@ -3,8 +3,16 @@ import header_img from '@/public/images/header_img.png';
 import {CalendarCheck2, RefreshCcw} from 'lucide-react';
 import Tile from './components/Tile/Tile';
 import journal from '@/public/images/journal.png';
+import Link from 'next/link';
+import { redirect } from 'next/dist/client/components/navigation';
+import { getSession } from '@/lib/auth-server';
 
-export default function Home() {
+export default async function Home() {
+  const session = await getSession()
+
+  if (session?.user) {
+    redirect('/dashboard')
+  }
   return (
     <div className='container mx-auto px-8 sm:px-0'>
       <section className='py-8'>
@@ -21,9 +29,9 @@ export default function Home() {
               organization. Our intuitive scheduling app is designed to
               streamline your calendar management.
             </p>
-            <button className='px-6 py-4 bg-blue-500 text-white rounded-lg hover:bg-blue-600 cursor-pointer transition-colors duration-300'>
+            <Link href="/dashboard" className='px-6 py-4 bg-blue-500 text-white rounded-lg hover:bg-blue-600 cursor-pointer transition-colors duration-300'>
               Get Started
-            </button>
+            </Link>
           </div>
           <div>
             <Image
