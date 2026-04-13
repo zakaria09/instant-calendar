@@ -12,14 +12,17 @@ export const auth = betterAuth({
   baseURL: process.env.BETTER_AUTH_URL ?? 'http://localhost:3001',
   advanced: {
     crossSubDomainCookies: {
-      enabled: true,
-      domain: process.env.NODE_ENV === 'production' ? '.instantcalendar.io' : undefined,
-    trustedOrigins: [
-      process.env.WEB_URL ?? 'http://localhost:3000',
-      process.env.BETTER_AUTH_URL ?? 'http://localhost:3001',
-    ],
+      enabled: process.env.NODE_ENV === 'production',
+      domain: 'instantcalendar.io',
     },
   },
+  trustedOrigins: [
+    process.env.WEB_URL ?? 'http://localhost:3000',
+    process.env.BETTER_AUTH_URL ?? 'http://localhost:3001',
+    'https://instantcalendar.io',
+    'https://www.instantcalendar.io',
+    'https://api.instantcalendar.io',
+  ],
   database: drizzleAdapter(db, {
     provider: 'pg',
     schema: {
@@ -43,8 +46,7 @@ export const auth = betterAuth({
         })
       },
     }),
-  ],
-  trustedOrigins: [process.env.WEB_URL ?? 'http://localhost:3000'],
+  ]
 })
 
 export type Auth = typeof auth
