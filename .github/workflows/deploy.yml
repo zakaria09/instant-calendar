@@ -110,6 +110,6 @@ jobs:
 
             # Wait for db to be healthy then run migrations
             sleep 15
-            docker compose exec -T api /app/apps/api/node_modules/.bin/tsx apps/api/src/migrate.ts
+            docker compose exec -T api node dist/apps/api/src/migrate.js
 
             docker image prune -f

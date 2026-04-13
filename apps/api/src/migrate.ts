@@ -8,7 +8,7 @@ async function runMigrations() {
   const db = drizzle(process.env.DATABASE_URL!)
 
   await migrate(db, {
-    migrationsFolder: path.join(__dirname, '../../../packages/db/drizzle'),
+    migrationsFolder: path.join(process.cwd(), 'packages/db/drizzle'),
   })
 
   console.log('Migrations complete')

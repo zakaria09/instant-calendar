@@ -18,14 +18,24 @@ RUN --mount=type=cache,target=/root/.local/share/pnpm/store \
     echo "No lockfile found." && exit 1; \
   fi
 
-FROM node:${NODE_VERSION} AS runner
+FROM node:${NODE_VERSION} AS builder
 
 WORKDIR /app
 
 COPY --from=dependencies /app ./
 
+RUN corepack enable pnpm && pnpm --filter @apps/api build
+
+FROM node:${NODE_VERSION} AS runner
+
+WORKDIR /app
+
 ENV NODE_ENV=production
+
+COPY --from=builder /app/apps/api/dist ./dist
+COPY --from=builder /app/node_modules ./node_modules
+COPY --from=builder /app/packages/db/drizzle ./packages/db/drizzle
 
 EXPOSE 3001
 
-CMD ["/app/apps/api/node_modules/.bin/tsx", "apps/api/src/index.ts"]
+CMD ["node", "dist/apps/api/src/index.js"]
