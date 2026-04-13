@@ -9,7 +9,17 @@ import * as authSchema from '@packages/types'
 const resend = new Resend(process.env.RESEND_API_KEY!)
 
 export const auth = betterAuth({
-  baseURL: process.env.BETTER_AUTH_URL,
+  baseURL: process.env.BETTER_AUTH_URL ?? 'http://localhost:3001',
+  advanced: {
+    crossSubDomainCookies: {
+      enabled: true,
+      domain: process.env.NODE_ENV === 'production' ? '.instantcalendar.io' : undefined,
+    trustedOrigins: [
+      process.env.WEB_URL ?? 'http://localhost:3000',
+      process.env.BETTER_AUTH_URL ?? 'http://localhost:3001',
+    ],
+    },
+  },
   database: drizzleAdapter(db, {
     provider: 'pg',
     schema: {
