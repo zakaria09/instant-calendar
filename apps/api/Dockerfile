@@ -33,13 +33,11 @@ FROM node:${NODE_VERSION} AS deploy
 
 WORKDIR /app
 
-COPY --from=dependencies /app ./
-
-# Copy compiled packages so pnpm deploy uses JS output not TS source
-COPY --from=builder /app/packages/types/dist ./packages/types/dist
-COPY --from=builder /app/packages/db/dist ./packages/db/dist
-
-RUN corepack enable pnpm && pnpm deploy --filter @apps/api --prod --legacy /app/deploy
+COPY --from=dependencies /app/node_modules ./node_modules
+COPY --from=builder /app/apps/api/dist ./dist
+COPY --from=builder /app/packages/db/drizzle ./packages/db/drizzle
+COPY --from=builder /app/package.json ./
+COPY --from=builder /app/apps/api/package.json ./apps/api/
 
 FROM node:${NODE_VERSION} AS runner
 
@@ -47,9 +45,7 @@ WORKDIR /app
 
 ENV NODE_ENV=production
 
-COPY --from=deploy /app/deploy ./
-COPY --from=builder /app/apps/api/dist ./dist
-COPY --from=builder /app/packages/db/drizzle ./packages/db/drizzle
+COPY --from=deploy /app ./
 
 EXPOSE 3001
 
