@@ -7,29 +7,13 @@ FROM node:${NODE_VERSION} AS dependencies
 
 WORKDIR /app
 
-# Add these after the ARG NODE_VERSION line at the top
-ARG NEXT_PUBLIC_API_URL
-ARG NEXT_PUBLIC_APP_URL
-
-# Then set them as ENV before the build step so Next.js picks them up
-ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
-ENV NEXT_PUBLIC_APP_URL=$NEXT_PUBLIC_APP_URL
-
-# Copy workspace files
 COPY pnpm-workspace.yaml ./
 COPY pnpm-lock.yaml ./
 COPY package.json ./
 COPY tsconfig.base.json ./
-
-# Copy app source and packages
 COPY apps/web ./apps/web
 COPY packages ./packages
 
-# Copy app source and packages
-COPY apps/web ./apps/web
-COPY packages ./packages
-
-# Install all dependencies
 RUN --mount=type=cache,target=/root/.local/share/pnpm/store \
   if [ -f pnpm-lock.yaml ]; then \
     corepack enable pnpm && pnpm install --frozen-lockfile; \
@@ -45,7 +29,12 @@ FROM node:${NODE_VERSION} AS builder
 
 WORKDIR /app
 
-# Copy everything from dependencies stage (source + node_modules)
+# Build args must be in the builder stage so Next.js can use them at build time
+ARG NEXT_PUBLIC_API_URL
+ARG NEXT_PUBLIC_APP_URL
+ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
+ENV NEXT_PUBLIC_APP_URL=$NEXT_PUBLIC_APP_URL
+
 COPY --from=dependencies /app ./
 
 ENV NODE_ENV=production
@@ -64,7 +53,6 @@ ENV NODE_ENV=production
 ENV PORT=3000
 ENV HOSTNAME="0.0.0.0"
 
-# public and .next output are now under apps/web/
 COPY --from=builder --chown=node:node /app/apps/web/public ./public
 
 RUN mkdir .next
