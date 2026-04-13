@@ -32,7 +32,6 @@ jobs:
             -f apps/api/Dockerfile \
             --push .
 
-
       - name: Deploy to VPS
         uses: appleboy/ssh-action@v1
         env:
@@ -64,7 +63,6 @@ jobs:
             BETTER_AUTH_SECRET=${BETTER_AUTH_SECRET}
             NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL}
             NEXT_PUBLIC_APP_URL=${NEXT_PUBLIC_APP_URL}
-            PORT=3001
             ENV
 
             cat > /root/docker-compose.yml <<'COMPOSE'
@@ -74,12 +72,16 @@ jobs:
                 ports:
                   - "3000:3000"
                 env_file: /root/instant-calendar.env
+                environment:
+                  - PORT=3000
 
               api:
                 image: ghcr.io/zakaria09/instant-calendar-api:latest
                 ports:
                   - "3001:3001"
                 env_file: /root/instant-calendar.env
+                environment:
+                  - PORT=3001
                 depends_on:
                   db:
                     condition: service_healthy
