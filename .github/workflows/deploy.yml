@@ -31,6 +31,11 @@ jobs:
             --platform linux/amd64 \
             -t ghcr.io/zakaria09/instant-calendar-api:latest \
             -f apps/api/Dockerfile \
+            --build-arg BETTER_AUTH_URL=${{ secrets.BETTER_AUTH_URL }} \
+            --build-arg BETTER_AUTH_SECRET=${{ secrets.BETTER_AUTH_SECRET }} \
+            --build-arg RESEND_API_KEY=${{ secrets.RESEND_API_KEY }} \
+            --build-arg EMAIL_FROM=${{ secrets.EMAIL_FROM }} \
+            --build-arg WEB_URL=${{ secrets.WEB_URL }} \
             --push .
 
       - name: Verify images
