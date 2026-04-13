@@ -64,6 +64,7 @@ jobs:
             BETTER_AUTH_SECRET=${BETTER_AUTH_SECRET}
             NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL}
             NEXT_PUBLIC_APP_URL=${NEXT_PUBLIC_APP_URL}
+            PORT=3001
             ENV
 
             cat > /root/docker-compose.yml <<'COMPOSE'
