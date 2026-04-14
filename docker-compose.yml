@@ -3,6 +3,8 @@ services:
     build:
       context: .
       dockerfile: apps/web/Dockerfile
+      args:
+        - NEXT_PUBLIC_API_URL=http://api:3001
     ports:
       - "3000:3000"
     environment:
@@ -18,6 +20,7 @@ services:
       - DATABASE_URL=postgresql://postgres:postgres@db:5432/instant_calendar
       - WEB_URL=http://localhost:3000
       - PORT=3001
+      - BETTER_AUTH_URL=http://localhost:3001
     env_file:
       - apps/api/.env
     depends_on:

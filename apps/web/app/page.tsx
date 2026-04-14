@@ -10,6 +10,8 @@ import { getSession } from '@/lib/auth-server';
 export default async function Home() {
   const session = await getSession()
 
+  console.log('Session:', session) // Debugging line to check session data
+
   if (session?.user) {
     redirect('/dashboard')
   }

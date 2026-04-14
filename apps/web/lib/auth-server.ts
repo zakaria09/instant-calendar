@@ -2,7 +2,7 @@ import { headers } from 'next/headers'
 
 export async function getSession() {
   const res = await fetch(
-    `${process.env.NEXT_PUBLIC_API_URL}/api/auth/get-session`,
+    `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/auth/get-session`,
     {
       headers: {
         cookie: (await headers()).get('cookie') ?? '',

@@ -1,11 +1,29 @@
+'use client'
+
 import Sidebar from '@/app/components/Sidebar/Sidebar'
+import { authClient } from '@/lib/auth-client'
+import { useRouter } from 'next/navigation'
+import { useEffect } from 'react'
 
-
-export default function DashboardLayout({
+function ProtectedLayout({
   children,
 }: {
   children: React.ReactNode
 }) {
+  const { data: session, isPending } = authClient.useSession()
+  const router = useRouter()
+
+  console.log('Session in ProtectedLayout:', session, isPending) // Debugging line to check session data
+
+  useEffect(() => {
+    if (!isPending && !session) {
+      router.push('/signin')
+    }
+  }, [session, isPending, router])
+
+  if (isPending) return <div>Loading...</div>
+  if (!session) return null
+
   return (
     <div className="flex h-screen bg-neutral-50 dark:bg-neutral-950">
       <Sidebar />
@@ -15,3 +33,5 @@ export default function DashboardLayout({
     </div>
   )
 }
+
+export default ProtectedLayout
