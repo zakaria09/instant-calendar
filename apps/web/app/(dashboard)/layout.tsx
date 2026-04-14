@@ -11,15 +11,8 @@ function ProtectedLayout({
   children: React.ReactNode
 }) {
   const { data: session, isPending } = authClient.useSession()
-  const router = useRouter()
 
   console.log('Session in ProtectedLayout:', session, isPending) // Debugging line to check session data
-
-  useEffect(() => {
-    if (!isPending && !session) {
-      router.push('/signin')
-    }
-  }, [session, isPending, router])
 
   if (isPending) return <div>Loading...</div>
   if (!session) return null
