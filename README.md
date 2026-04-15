@@ -24,16 +24,12 @@ Built for barbers, nail technicians, personal trainers, therapists, tutors, and 
 
 ## Monorepo Structure
 
-```
 /apps
-  /web          # Next.js frontend
-  /api          # Hono backend API
+/web          # Next.js frontend
+/api          # Hono backend API
 /packages
-  /db           # Drizzle schema, migrations, db client
-  /types        # Shared Zod schemas and TypeScript types
-```
-
----
+/db           # Drizzle schema, migrations, db client
+/types        # Shared Zod schemas and TypeScript types
 
 ## Getting Started
 
@@ -41,7 +37,7 @@ Built for barbers, nail technicians, personal trainers, therapists, tutors, and 
 
 - Node.js 20+
 - pnpm
-- Docker
+- Docker (for the database)
 
 ### Local Development
 
@@ -73,7 +69,7 @@ NEXT_PUBLIC_APP_URL=http://localhost:3000
 3. Start the database:
 
 ```bash
-docker compose up db
+pnpm run docker:db
 ```
 
 4. Run migrations:
@@ -85,10 +81,13 @@ pnpm --filter @packages/db db:migrate
 5. Start both apps:
 
 ```bash
-# Terminal 1
-pnpm --filter @apps/api dev
+pnpm run dev
+```
 
-# Terminal 2
+Or individually:
+
+```bash
+pnpm --filter @apps/api dev
 pnpm --filter @apps/web dev
 ```
 
@@ -96,13 +95,15 @@ Web runs on [localhost:3000](http://localhost:3000) · API runs on [localhost:30
 
 ---
 
-## Docker
+## Scripts
 
-Run the full stack locally with Docker:
-
-```bash
-pnpm run docker:dev
-```
+| Script | Description |
+|---|---|
+| `pnpm run dev` | Start web and api concurrently |
+| `pnpm run build` | Build web and api |
+| `pnpm run docker:db` | Start PostgreSQL in Docker |
+| `pnpm run docker:db:down` | Stop PostgreSQL |
+| `pnpm run docker:push` | Build and push production image to GHCR |
 
 ---
 
@@ -156,7 +157,7 @@ Pushes to `main` trigger the GitHub Actions pipeline which:
 
 ## Infrastructure
 
-- **VPS** — DigitalOcean `s-1vcpu-1gb` droplet in `lon1`
+- **VPS** — DigitalOcean `s-1vcpu-2gb` droplet in `lon1`
 - **Reverse proxy** — Caddy with automatic HTTPS via Let's Encrypt
 - **State** — Terraform remote state stored in DigitalOcean Spaces
 

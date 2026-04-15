@@ -1,10 +1,14 @@
 services:
   web:
+    volumes:
+      - ./apps/web:/app/apps/web
+      - /app/apps/web/node_modules
     build:
       context: .
       dockerfile: apps/web/Dockerfile
       args:
-        - NEXT_PUBLIC_API_URL=http://api:3001
+        - NEXT_PUBLIC_API_URL=http://localhost:3001
+    command: pnpm --filter web dev
     ports:
       - "3000:3000"
     restart: unless-stopped 
@@ -12,9 +16,13 @@ services:
       - DATABASE_URL=postgresql://postgres:postgres@db:5432/instant_calendar
 
   api:
+    volumes:
+      - ./apps/api:/app/apps/api
+      - /app/apps/api/node_modules
     build:
       context: .
       dockerfile: apps/api/Dockerfile
+    command: pnpm --filter api dev
     ports:
       - "3001:3001"
     restart: unless-stopped 

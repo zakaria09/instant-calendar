@@ -4,6 +4,9 @@
 ############################################################
 
 # Dependencies (installed inside Docker, never copied)
+**/node_modules
+**/.next
+**/dist
 node_modules/
 .pnpm-store/
 npm-debug.log*
