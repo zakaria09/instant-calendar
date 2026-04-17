@@ -4,6 +4,9 @@
   "scripts": {
     "dev": "concurrently \"pnpm --filter @apps/web dev\" \"pnpm --filter @apps/api dev\"",
     "build": "pnpm --filter @apps/web build && pnpm --filter @apps/api build",
+    "db:studio": "pnpm --filter @packages/db db:studio",
+    "db:generate": "pnpm --filter @packages/db db:generate",
+    "db:migrate": "pnpm --filter @packages/db db:migrate",
     "docker:db": "docker compose -f docker-compose.dev.yml up db",
     "docker:db:down": "docker compose -f docker-compose.dev.yml down",
     "docker:push": "docker buildx build --platform linux/amd64 -t ghcr.io/zakaria09/instant-calendar:latest --push -f apps/web/Dockerfile ."
