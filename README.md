@@ -118,9 +118,14 @@ pnpm --filter @packages/db db:generate
 # Run migrations locally
 pnpm --filter @packages/db db:migrate
 
+# Push schema directly to the database (no migration files — useful for local dev)
+pnpm --filter @packages/db db:push
+
 # Open Drizzle Studio
 pnpm --filter @packages/db db:studio
 ```
+
+> **`db:push` vs `db:migrate`** — `db:push` applies your Drizzle schema directly to the database without creating migration files. It's convenient during local development when you're iterating on the schema. For production, use `db:generate` + `db:migrate` to create versioned, reviewable migration files.
 
 ---
 
