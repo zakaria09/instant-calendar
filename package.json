@@ -3,6 +3,7 @@
   "private": true,
   "scripts": {
     "dev": "concurrently \"pnpm --filter @apps/web dev\" \"pnpm --filter @apps/api dev\"",
+    "dev:mobile": "pnpm --filter @apps/mobile start",
     "build": "pnpm --filter @apps/web build && pnpm --filter @apps/api build",
     "db:studio": "pnpm --filter @packages/db db:studio",
     "db:generate": "pnpm --filter @packages/db db:generate",
