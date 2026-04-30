@@ -5,7 +5,9 @@ import { Resend } from 'resend'
 import { db } from '@packages/db'
 import * as schema from '@packages/db'
 import * as authSchema from '@packages/types'
+import * as orgSchema from '@packages/types'
 import { jwt, bearer } from "better-auth/plugins"
+import { organization } from "better-auth/plugins"
 
 const resend = new Resend(process.env.RESEND_API_KEY!)
 
@@ -29,11 +31,13 @@ export const auth = betterAuth({
     schema: {
       ...schema,
       ...authSchema,
+      ...orgSchema,
     },
   }),
   plugins: [
     jwt(),
     bearer(),
+    organization(),
     magicLink({
       sendMagicLink: async ({ email, url }) => {
         await resend.emails.send({

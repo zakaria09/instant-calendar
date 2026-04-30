@@ -5,15 +5,8 @@
     {
       "idx": 0,
       "version": "7",
-      "when": 1775820556406,
-      "tag": "0000_gifted_scrambler",
-      "breakpoints": true
-    },
-    {
-      "idx": 1,
-      "version": "7",
-      "when": 1775820611674,
-      "tag": "0001_high_dazzler",
+      "when": 1777556287566,
+      "tag": "0000_light_mister_fear",
       "breakpoints": true
     }
   ]

@@ -13,18 +13,19 @@
   "dependencies": {
     "better-auth": "^1.6.2",
     "dotenv": "^17.4.1",
-    "drizzle-orm": "^0.45.2",
+    "drizzle-orm": "^0.44.2",
     "pg": "^8.20.0"
   },
   "devDependencies": {
     "@types/node": "^20.19.39",
     "@types/pg": "^8.20.0",
-    "drizzle-kit": "^0.31.10",
+    "drizzle-kit": "^0.30.6",
     "typescript": "^6.0.2"
   },
   "exports": {
     ".": "./dist/index.js",
     "./schema": "./dist/schema.js",
-    "./auth-schema": "./dist/auth-schema.js"
+    "./auth-schema": "./dist/auth-schema.js",
+    "./org-schema": "./dist/org-schema.js"
   }
 }

@@ -15,7 +15,7 @@ Built for barbers, nail technicians, personal trainers, therapists, tutors, and 
 | Frontend | Next.js 16 (App Router), Tailwind CSS v4 |
 | Backend | Hono, Better Auth, Drizzle ORM |
 | Database | PostgreSQL 16 |
-| Auth | Better Auth — magic link (passwordless) |
+| Auth | Better Auth — magic link (passwordless), organisation plugin |
 | Email | Resend |
 | Infrastructure | DigitalOcean VPS, Docker, Caddy |
 | CI/CD | GitHub Actions, GHCR |
@@ -24,12 +24,14 @@ Built for barbers, nail technicians, personal trainers, therapists, tutors, and 
 
 ## Monorepo Structure
 
+```
 /apps
-/web          # Next.js frontend
-/api          # Hono backend API
+  /web          # Next.js frontend
+  /api          # Hono backend API
 /packages
-/db           # Drizzle schema, migrations, db client
-/types        # Shared Zod schemas and TypeScript types
+  /db           # Drizzle schema, migrations, db client
+  /types        # Shared Zod schemas and TypeScript types
+```
 
 ## Getting Started
 
@@ -109,6 +111,14 @@ Web runs on [localhost:3000](http://localhost:3000) · API runs on [localhost:30
 
 ## Database
 
+Schema is split across three files in `packages/db/src/`:
+
+- `auth-schema.ts` — user, session, account, verification, jwks (Better Auth core)
+- `org-schema.ts` — organisation, member, invitation (Better Auth organisation plugin)
+- `schema.ts` — calendars and other application tables
+
+All three are registered in `drizzle.config.ts`.
+
 Migrations are managed with Drizzle Kit and run automatically on every production deploy.
 
 ```bash
@@ -126,6 +136,19 @@ pnpm --filter @packages/db db:studio
 ```
 
 > **`db:push` vs `db:migrate`** — `db:push` applies your Drizzle schema directly to the database without creating migration files. It's convenient during local development when you're iterating on the schema. For production, use `db:generate` + `db:migrate` to create versioned, reviewable migration files.
+
+### Drizzle version pinning
+
+`drizzle-kit` is pinned to **0.30.6** and `drizzle-orm` to **0.44.2**. Versions 0.31.x of drizzle-kit have a [known bug](https://github.com/drizzle-team/drizzle-orm/issues/4451) where `drizzle-kit migrate` hangs indefinitely with the `pg` driver on macOS. Check the issue before upgrading — once it's resolved, the pin can be lifted.
+
+### Manual migration fallback
+
+If `drizzle-kit migrate` ever hangs or fails, you can apply migration SQL directly via psql:
+
+```bash
+docker cp packages/db/drizzle/<migration_file>.sql instant-calendar-db-1:/tmp/migration.sql
+docker exec instant-calendar-db-1 psql -U postgres -d instant_calendar -f /tmp/migration.sql
+```
 
 ---
 
