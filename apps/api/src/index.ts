@@ -3,6 +3,7 @@ import { cors } from 'hono/cors'
 import { logger } from 'hono/logger'
 import { serve } from '@hono/node-server'
 import { auth } from './lib/auth'
+import onboardingRoutes from './routes/onboarding'
 
 const app = new Hono()
 
@@ -21,6 +22,9 @@ app.on(['GET', 'POST'], '/api/auth/**', (c) => {
 
 // Health check
 app.get('/api/health', (c) => c.json({ ok: true }))
+
+// Onboarding
+app.route('/api/onboarding', onboardingRoutes)
 
 export type AppType = typeof app
 
