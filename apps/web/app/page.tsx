@@ -4,16 +4,20 @@ import {CalendarCheck2, RefreshCcw} from 'lucide-react';
 import Tile from './components/Tile/Tile';
 import journal from '@/public/images/journal.png';
 import Link from 'next/link';
-import { redirect } from 'next/dist/client/components/navigation';
-import { getSession } from '@/lib/auth-server';
+import { redirect } from 'next/navigation';
+import { getOnboardingStatus, getSession } from '@/lib/auth-server';
 
 export default async function Home() {
   const session = await getSession()
 
-  console.log('Session:', session) // Debugging line to check session data
-
   if (session?.user) {
-    redirect('/dashboard')
+    const onboarding = await getOnboardingStatus()
+
+    if (onboarding?.isOnboarded) {
+      redirect('/dashboard')
+    }
+
+    redirect('/onboarding')
   }
   return (
     <div className='container mx-auto px-8 sm:px-0'>

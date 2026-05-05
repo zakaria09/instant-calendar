@@ -24,6 +24,31 @@ onboardingRoutes.get("/status", async (c) => {
   return c.json({ isOnboarded: currentUser?.isOnboarded ?? false });
 });
 
+// Check slug availability (used by the frontend during typing)
+onboardingRoutes.post("/check-slug", async (c) => {
+  const session = await auth.api.getSession({
+    headers: c.req.raw.headers,
+  });
+ 
+  if (!session) {
+    return c.json({ error: "Unauthorized" }, 401);
+  }
+ 
+  const body = await c.req.json();
+  const { slug } = body;
+ 
+  if (!slug?.trim()) {
+    return c.json({ error: "slug is required" }, 400);
+  }
+ 
+  const result = await auth.api.checkOrganizationSlug({
+    body: { slug },
+  });
+ 
+  // Returns { status: true } if available, { status: false } if taken
+  return c.json(result);
+});
+
 // Step 1: Update profile
 onboardingRoutes.post("/profile", async (c) => {
   const session = await auth.api.getSession({

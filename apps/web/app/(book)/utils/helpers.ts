@@ -2,7 +2,7 @@ import { BookingState } from '../types/booking.types';
 
 export const STORAGE_KEY = "instantcal-booking";
  
-export const STEPS = ["Service", "Staff", "Date & Time"] as const;
+export const STEPS = ["Service", "Staff", "Date & Time"];
 
 export function getStepFromURL(): number {
   if (typeof window === "undefined") return 1;

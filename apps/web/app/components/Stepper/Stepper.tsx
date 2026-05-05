@@ -1,19 +1,20 @@
 'use client'
 import React from 'react'
-import { STEPS } from '../../utils/helpers';
 
 export default function Stepper({
+  steps,
   currentStep,
   onStepClick,
   completedSteps,
 }: {
+  steps: string[];
   currentStep: number;
   onStepClick: (step: number) => void;
   completedSteps: Set<number>;
 }) {
   return (
     <div className="flex items-center justify-center gap-0 mb-10">
-      {STEPS.map((label, i) => {
+      {steps.map((label, i) => {
         const stepNum = i + 1;
         const isActive = stepNum === currentStep;
         const isCompleted = completedSteps.has(stepNum);
@@ -53,7 +54,7 @@ export default function Stepper({
                 {label}
               </span>
             </div>
-            {i < STEPS.length - 1 && (
+            {i < steps.length - 1 && (
               <div
                 className={`w-16 h-px mx-2 mb-6 transition-colors duration-200 ${
                   completedSteps.has(stepNum) ? "bg-[#6B4C3B]/30" : "bg-gray-200"

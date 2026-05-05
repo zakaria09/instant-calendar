@@ -6,16 +6,16 @@ import {
   getStepFromURL,
   saveBookingToStorage,
   setStepInURL,
+  STEPS,
   STORAGE_KEY,
 } from '../../utils/helpers';
-import Stepper from '../../_components/Stepper/Stepper';
 import ServiceSelect, {SERVICES} from '../../_components/ServiceSelect/ServiceSelect';
 import StaffSelect, {STAFF} from '../../_components/StaffSelect/StaffSelect';
 import DateSelect from '../../_components/DateSelect/DateSelect';
 import { Button } from '@/components/ui/button';
 import {useRouter} from 'next/navigation';
+import Stepper from '@/app/components/Stepper/Stepper';
 
-// move to utils/constants.ts or similar if used elsewhere
 export enum BookingSteps {
   Service = 1,
   Staff = 2,
@@ -152,6 +152,7 @@ export default function BookingPage() {
         </div>
 
         <Stepper
+          steps={STEPS}
           currentStep={step}
           onStepClick={goToStep}
           completedSteps={completedSteps}
