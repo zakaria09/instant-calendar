@@ -15,6 +15,13 @@
       "when": 1777562851348,
       "tag": "0001_nice_magus",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1777987362791,
+      "tag": "0002_first_ser_duncan",
+      "breakpoints": true
     }
   ]
 }

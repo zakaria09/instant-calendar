@@ -5,23 +5,73 @@ import React from 'react'
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? '';
 
-const STEPS = ["Your Name", "Organisation"];
+const STEPS = ["Your Name", "Availability", "Organisation"];
 
 enum OnboardingSteps {
   Name = 1,
-  Organisation = 2,
+  Availability = 2,
+  Organisation = 3,
+}
+
+const DAYS = [
+  { key: 'mon', label: 'Mon' },
+  { key: 'tue', label: 'Tue' },
+  { key: 'wed', label: 'Wed' },
+  { key: 'thu', label: 'Thu' },
+  { key: 'fri', label: 'Fri' },
+  { key: 'sat', label: 'Sat' },
+  { key: 'sun', label: 'Sun' },
+] as const;
+
+type DayKey = typeof DAYS[number]['key'];
+
+type DayAvailability = {
+  enabled: boolean;
+  startTime: string;
+  endTime: string;
 }
 
 type OnboardingState = {
   name: string;
+  availability: Record<DayKey, DayAvailability>;
   organisationName: string;
   slug: string;
 }
 
+const DEFAULT_HOURS: DayAvailability = { enabled: true, startTime: '09:00', endTime: '17:00' };
+const DISABLED_HOURS: DayAvailability = { enabled: false, startTime: '09:00', endTime: '17:00' };
+
 const EMPTY_STATE: OnboardingState = {
   name: '',
+  availability: {
+    mon: { ...DEFAULT_HOURS },
+    tue: { ...DEFAULT_HOURS },
+    wed: { ...DEFAULT_HOURS },
+    thu: { ...DEFAULT_HOURS },
+    fri: { ...DEFAULT_HOURS },
+    sat: { ...DISABLED_HOURS },
+    sun: { ...DISABLED_HOURS },
+  },
   organisationName: '',
   slug: '',
+}
+
+// Generate time options in 30-min increments
+function generateTimeOptions(): string[] {
+  const options: string[] = [];
+  for (let h = 0; h < 24; h++) {
+    for (let m = 0; m < 60; m += 30) {
+      options.push(`${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`);
+    }
+  }
+  return options;
+}
+
+const TIME_OPTIONS = generateTimeOptions();
+
+function formatTime(time: string): string {
+  const [h, m] = time.split(':').map(Number);
+  return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
 }
 
 function generateSlug(name: string): string {
@@ -44,15 +94,17 @@ export default function OnboardingPage() {
   const [isCheckingSlug, setIsCheckingSlug] = React.useState(false);
   const [isSubmitting, setIsSubmitting] = React.useState(false);
   const [isSavingProfile, setIsSavingProfile] = React.useState(false);
-  const [errors, setErrors] = React.useState<Partial<Record<keyof OnboardingState, string>>>({});
+  const [isSavingAvailability, setIsSavingAvailability] = React.useState(false);
+  const [errors, setErrors] = React.useState<Partial<Record<string, string>>>({});
 
   const slugDebounceRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // ─── Field updates ───
 
   const updateField = (field: keyof OnboardingState, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
     setErrors(prev => ({ ...prev, [field]: undefined }));
 
-    // Auto-generate slug from organisation name
     if (field === 'organisationName' && !slugManuallyEdited) {
       const newSlug = generateSlug(value);
       setFormData(prev => ({ ...prev, slug: newSlug }));
@@ -63,6 +115,36 @@ export default function OnboardingPage() {
       }
     }
   };
+
+  const toggleDay = (day: DayKey) => {
+    setFormData(prev => ({
+      ...prev,
+      availability: {
+        ...prev.availability,
+        [day]: {
+          ...prev.availability[day],
+          enabled: !prev.availability[day].enabled,
+        },
+      },
+    }));
+    setErrors(prev => ({ ...prev, availability: undefined }));
+  };
+
+  const updateDayTime = (day: DayKey, field: 'startTime' | 'endTime', value: string) => {
+    setFormData(prev => ({
+      ...prev,
+      availability: {
+        ...prev.availability,
+        [day]: {
+          ...prev.availability[day],
+          [field]: value,
+        },
+      },
+    }));
+    setErrors(prev => ({ ...prev, [`availability_${day}`]: undefined }));
+  };
+
+  // ─── Slug ───
 
   const handleSlugChange = (value: string) => {
     const sanitised = value.toLowerCase().replace(/[^a-z0-9-]/g, '');
@@ -88,7 +170,6 @@ export default function OnboardingPage() {
           body: JSON.stringify({ slug }),
         });
         const data = await res.json();
-        // Your Better Auth checkOrganizationSlug returns { status: true } if available
         setSlugConflict(data.status === false);
       } catch {
         setSlugConflict(false);
@@ -98,11 +179,26 @@ export default function OnboardingPage() {
     }, 400);
   };
 
+  // ─── Validation ───
+
   const validateStep = (step: OnboardingSteps): boolean => {
-    const newErrors: Partial<Record<keyof OnboardingState, string>> = {};
+    const newErrors: Record<string, string> = {};
 
     if (step === OnboardingSteps.Name) {
       if (!formData.name.trim()) newErrors.name = 'Name is required';
+    }
+
+    if (step === OnboardingSteps.Availability) {
+      const enabledDays = DAYS.filter(d => formData.availability[d.key].enabled);
+      if (enabledDays.length === 0) {
+        newErrors.availability = 'Select at least one day';
+      }
+      for (const d of enabledDays) {
+        const { startTime, endTime } = formData.availability[d.key];
+        if (startTime >= endTime) {
+          newErrors[`availability_${d.key}`] = 'End time must be after start time';
+        }
+      }
     }
 
     if (step === OnboardingSteps.Organisation) {
@@ -115,7 +211,9 @@ export default function OnboardingPage() {
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleNext = async () => {
+  // ─── Step handlers ───
+
+  const handleNameNext = async () => {
     if (!validateStep(OnboardingSteps.Name)) return;
 
     setIsSavingProfile(true);
@@ -133,11 +231,45 @@ export default function OnboardingPage() {
       }
 
       setCompletedSteps(prev => new Set(prev).add(OnboardingSteps.Name));
-      setCurrentStep(OnboardingSteps.Organisation);
+      setCurrentStep(OnboardingSteps.Availability);
     } catch (err) {
       setErrors({ name: err instanceof Error ? err.message : 'Failed to save profile. Please try again.' });
     } finally {
       setIsSavingProfile(false);
+    }
+  };
+
+  const handleAvailabilityNext = async () => {
+    if (!validateStep(OnboardingSteps.Availability)) return;
+
+    setIsSavingAvailability(true);
+    try {
+      const availability = DAYS
+        .filter(d => formData.availability[d.key].enabled)
+        .map(d => ({
+          day: d.key,
+          startTime: formData.availability[d.key].startTime,
+          endTime: formData.availability[d.key].endTime,
+        }));
+
+      const res = await fetch(`${API_BASE}/api/onboarding/availability`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ availability }),
+      });
+
+      if (!res.ok) {
+        const data = await res.json().catch(() => null);
+        throw new Error(data?.error || 'Failed to save availability');
+      }
+
+      setCompletedSteps(prev => new Set(prev).add(OnboardingSteps.Availability));
+      setCurrentStep(OnboardingSteps.Organisation);
+    } catch (err) {
+      setErrors({ availability: err instanceof Error ? err.message : 'Failed to save availability. Please try again.' });
+    } finally {
+      setIsSavingAvailability(false);
     }
   };
 
@@ -166,8 +298,6 @@ export default function OnboardingPage() {
         throw new Error(data?.error || 'Something went wrong');
       }
 
-      console.log('Onboarding complete, redirecting to dashboard', await res.json());
-
       router.push('/dashboard');
     } catch (err) {
       setErrors({ organisationName: err instanceof Error ? err.message : 'Failed to complete setup. Please try again.' });
@@ -182,18 +312,24 @@ export default function OnboardingPage() {
     }
   };
 
+  // ─── Render ───
+
+  const subtitles: Record<OnboardingSteps, string> = {
+    [OnboardingSteps.Name]: "Let's start with your name",
+    [OnboardingSteps.Availability]: 'Set your typical working hours',
+    [OnboardingSteps.Organisation]: 'Name your organisation and pick a URL',
+  };
+
   return (
-    <div className="min-h-screen bg-[#FAF8F5] flex items-start justify-center pt-[12vh] px-4">
-      <div className="w-full max-w-md">
+    <div className="min-h-screen bg-[#FAF8F5] flex items-start justify-center pt-[10vh] px-4 pb-12">
+      <div className="w-full max-w-lg">
         {/* Header */}
         <div className="text-center mb-8">
           <h1 className="text-2xl font-semibold text-[#2C2421] tracking-tight">
             Set up your account
           </h1>
           <p className="mt-2 text-sm text-[#8C7B72]">
-            {currentStep === OnboardingSteps.Name
-              ? "Let's start with your name"
-              : 'Name your organisation and pick a URL'}
+            {subtitles[currentStep]}
           </p>
         </div>
 
@@ -207,6 +343,8 @@ export default function OnboardingPage() {
 
         {/* Form Card */}
         <div className="bg-white rounded-xl border border-[#E8E2DC] shadow-sm p-6">
+
+          {/* ─── Step 1: Name ─── */}
           {currentStep === OnboardingSteps.Name && (
             <div className="space-y-4">
               <InputField
@@ -217,10 +355,9 @@ export default function OnboardingPage() {
                 placeholder="Zak Smith"
                 autoFocus
               />
-
               <button
                 type="button"
-                onClick={handleNext}
+                onClick={handleNameNext}
                 disabled={isSavingProfile}
                 className="w-full mt-2 h-11 rounded-lg bg-[#6B4C3B] text-white text-sm font-medium
                   hover:bg-[#5A3E30] active:bg-[#4A3226] transition-colors duration-150
@@ -239,6 +376,108 @@ export default function OnboardingPage() {
             </div>
           )}
 
+          {/* ─── Step 2: Availability ─── */}
+          {currentStep === OnboardingSteps.Availability && (
+            <div className="space-y-5">
+              <p className="text-xs text-[#8C7B72]">
+                Toggle the days you work and set your hours. You can fine-tune this later.
+              </p>
+
+              <div className="space-y-2">
+                {DAYS.map(({ key, label }) => {
+                  const day = formData.availability[key];
+                  const dayError = errors[`availability_${key}`];
+                  return (
+                    <div key={key}>
+                      <div className="flex items-center gap-3">
+                        {/* Toggle */}
+                        <button
+                          type="button"
+                          onClick={() => toggleDay(key)}
+                          className={`
+                            relative w-10 h-[22px] rounded-full transition-colors duration-200 flex-shrink-0
+                            ${day.enabled ? 'bg-[#6B4C3B]' : 'bg-gray-200'}
+                          `}
+                          aria-label={`Toggle ${label}`}
+                        >
+                          <span
+                            className={`
+                              absolute top-[2px] left-[2px] w-[18px] h-[18px] rounded-full bg-white shadow-sm
+                              transition-transform duration-200
+                              ${day.enabled ? 'translate-x-[18px]' : 'translate-x-0'}
+                            `}
+                          />
+                        </button>
+
+                        {/* Day label */}
+                        <span className={`text-sm font-medium w-10 ${day.enabled ? 'text-[#2C2421]' : 'text-gray-400'}`}>
+                          {label}
+                        </span>
+
+                        {/* Time selectors */}
+                        {day.enabled ? (
+                          <div className="flex items-center gap-2 flex-1 min-w-0">
+                            <TimeSelect
+                              value={day.startTime}
+                              onChange={v => updateDayTime(key, 'startTime', v)}
+                              hasError={!!dayError}
+                            />
+                            <span className="text-xs text-[#8C7B72]">to</span>
+                            <TimeSelect
+                              value={day.endTime}
+                              onChange={v => updateDayTime(key, 'endTime', v)}
+                              hasError={!!dayError}
+                            />
+                          </div>
+                        ) : (
+                          <span className="text-sm text-gray-400 italic">Unavailable</span>
+                        )}
+                      </div>
+                      {dayError && (
+                        <p className="text-xs text-red-500 mt-1 ml-[84px]">{dayError}</p>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+
+              {errors.availability && (
+                <p className="text-xs text-red-500">{errors.availability}</p>
+              )}
+
+              <div className="flex gap-3 mt-2">
+                <button
+                  type="button"
+                  onClick={() => setCurrentStep(OnboardingSteps.Name)}
+                  className="h-11 px-4 rounded-lg border border-[#D9D1CA] text-sm font-medium text-[#6B4C3B]
+                    hover:bg-[#F5F1ED] active:bg-[#EDE7E1] transition-colors duration-150
+                    focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#6B4C3B] focus-visible:ring-offset-2"
+                >
+                  Back
+                </button>
+                <button
+                  type="button"
+                  onClick={handleAvailabilityNext}
+                  disabled={isSavingAvailability}
+                  className="flex-1 h-11 rounded-lg bg-[#6B4C3B] text-white text-sm font-medium
+                    hover:bg-[#5A3E30] active:bg-[#4A3226] transition-colors duration-150
+                    disabled:opacity-50 disabled:cursor-not-allowed
+                    focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#6B4C3B] focus-visible:ring-offset-2"
+                >
+                  {isSavingAvailability ? (
+                    <span className="flex items-center justify-center gap-2">
+                      <LoadingSpinner />
+                      Saving…
+                    </span>
+                  ) : (
+                    'Continue'
+                  )}
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* ─── Step 3: Organisation ─── */}
           {currentStep === OnboardingSteps.Organisation && (
             <div className="space-y-4">
               <InputField
@@ -271,7 +510,6 @@ export default function OnboardingPage() {
                       }`}
                   />
                 </div>
-                {/* Slug status feedback */}
                 <div className="mt-1.5 min-h-[20px]">
                   {isCheckingSlug && (
                     <p className="text-xs text-[#8C7B72] flex items-center gap-1.5">
@@ -301,7 +539,7 @@ export default function OnboardingPage() {
               <div className="flex gap-3 mt-2">
                 <button
                   type="button"
-                  onClick={() => setCurrentStep(OnboardingSteps.Name)}
+                  onClick={() => setCurrentStep(OnboardingSteps.Availability)}
                   className="h-11 px-4 rounded-lg border border-[#D9D1CA] text-sm font-medium text-[#6B4C3B]
                     hover:bg-[#F5F1ED] active:bg-[#EDE7E1] transition-colors duration-150
                     focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#6B4C3B] focus-visible:ring-offset-2"
@@ -341,6 +579,33 @@ export default function OnboardingPage() {
 
 
 /* ─── Sub-components ─── */
+
+function TimeSelect({
+  value,
+  onChange,
+  hasError,
+}: {
+  value: string;
+  onChange: (v: string) => void;
+  hasError?: boolean;
+}) {
+  return (
+    <select
+      value={value}
+      onChange={e => onChange(e.target.value)}
+      className={`h-9 px-2 rounded-lg border text-sm text-[#2C2421] bg-white
+        appearance-none cursor-pointer transition-colors duration-150 outline-none
+        ${hasError
+          ? 'border-red-400 focus:border-red-500'
+          : 'border-[#D9D1CA] focus:border-[#6B4C3B]'
+        }`}
+    >
+      {TIME_OPTIONS.map(t => (
+        <option key={t} value={t}>{formatTime(t)}</option>
+      ))}
+    </select>
+  );
+}
 
 function InputField({
   label,

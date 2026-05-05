@@ -1,8 +1,16 @@
 import { Hono } from "hono";
 import { auth } from "../lib/auth";
-import { db } from "@packages/db";
+import { availability, db } from "@packages/db";
 import { user } from "@packages/db";
 import { eq } from "drizzle-orm";
+import { calendars } from '@packages/db/schema';
+import {z} from 'zod'
+
+const availabilityEntrySchema = z.array(z.object({
+  day: z.enum(['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun']),
+  startTime: z.string().regex(/^([01]\d|2[0-3]):([0-5]\d)$/, "startTime must be in HH:mm format"),
+  endTime: z.string().regex(/^([01]\d|2[0-3]):([0-5]\d)$/, "endTime must be in HH:mm format"),
+}))
 
 const onboardingRoutes = new Hono();
 
@@ -78,7 +86,63 @@ onboardingRoutes.post("/profile", async (c) => {
   });
 });
 
-// Step 2: Create organisation
+// Step 2: Add availability 
+onboardingRoutes.post("/availability", async (c) => {
+  const session = await auth.api.getSession({
+    headers: c.req.raw.headers,
+  });
+
+  if (!session) {
+    return c.json({ error: "Unauthorized" }, 401);
+  }
+
+  const body = await c.req.json();
+  const { availability: slots } = body;
+
+  const availabilityParsed = availabilityEntrySchema.safeParse(slots);
+
+  if (!availabilityParsed.success) {
+    return c.json({ error: "Invalid availability format", details: availabilityParsed.error.cause }, 400);
+  }
+
+  const result = await db.transaction(async (tx) => {
+
+    // check if user already has a calendar (idempotency)
+    const existingCalendars = await tx.select().from(calendars).where(eq(calendars.userId, session.user.id))
+
+    if (existingCalendars.length > 0) {
+      return { alreadyExists: true };
+    }
+
+    // Add user's initial calendar
+    const [calendar] = await tx.insert(calendars).values({
+      userId: session.user.id,
+      name: `${session.user.name}'s Calendar`,
+    }).returning({ id: calendars.id })
+
+    // Add availability entries linked to the calendar
+    const availabilityEntries = availabilityParsed.data.map((entry) => ({
+      calendarId: calendar.id,
+      day: entry.day,
+      startTime: entry.startTime,
+      endTime: entry.endTime,
+    }));
+
+    const result = await tx.insert(availability).values(availabilityEntries);
+
+    return { alreadyExists: false, calendarId: calendar.id };
+
+  })
+
+  if (result.alreadyExists) {
+    return c.json({ success: true, message: "Availability already set" });
+  }
+
+  return c.json({ success: true, calendarId: result.calendarId });
+
+});
+
+// Step 3: Create organisation
 onboardingRoutes.post("/organisation", async (c) => {
   const session = await auth.api.getSession({
     headers: c.req.raw.headers,
