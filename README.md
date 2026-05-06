@@ -111,14 +111,6 @@ Web runs on [localhost:3000](http://localhost:3000) · API runs on [localhost:30
 
 ## Database
 
-Schema is split across three files in `packages/db/src/`:
-
-- `auth-schema.ts` — user, session, account, verification, jwks (Better Auth core)
-- `org-schema.ts` — organisation, member, invitation (Better Auth organisation plugin)
-- `schema.ts` — calendars and other application tables
-
-All three are registered in `drizzle.config.ts`.
-
 Migrations are managed with Drizzle Kit and run automatically on every production deploy.
 
 ```bash
@@ -136,6 +128,16 @@ pnpm --filter @packages/db db:studio
 ```
 
 > **`db:push` vs `db:migrate`** — `db:push` applies your Drizzle schema directly to the database without creating migration files. It's convenient during local development when you're iterating on the schema. For production, use `db:generate` + `db:migrate` to create versioned, reviewable migration files.
+
+> **Migration history table location** — Drizzle stores migration history in `drizzle.__drizzle_migrations` (schema `drizzle`), not `public.__drizzle_migrations`.
+>
+> Verify applied migrations with:
+>
+> ```sql
+> SELECT id, hash, created_at
+> FROM drizzle.__drizzle_migrations
+> ORDER BY id;
+> ```
 
 ### Drizzle version pinning
 

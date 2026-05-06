@@ -3,7 +3,7 @@ import { auth } from "../lib/auth";
 import { availability, db } from "@packages/db";
 import { user } from "@packages/db";
 import { eq } from "drizzle-orm";
-import { calendars } from '@packages/db/schema';
+import { calendars } from '@packages/db';
 import {z} from 'zod'
 
 const availabilityEntrySchema = z.array(z.object({

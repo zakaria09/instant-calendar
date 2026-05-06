@@ -23,9 +23,6 @@
     "typescript": "^6.0.2"
   },
   "exports": {
-    ".": "./dist/index.js",
-    "./schema": "./dist/schema.js",
-    "./auth-schema": "./dist/auth-schema.js",
-    "./org-schema": "./dist/org-schema.js"
+    ".": "./dist/index.js"
   }
 }

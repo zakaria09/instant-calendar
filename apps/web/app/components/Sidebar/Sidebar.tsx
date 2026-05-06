@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
-import { LayoutDashboard, Calendar, BookOpen, Settings, LogOut, Menu, X } from 'lucide-react'
+import { LayoutDashboard, Calendar, BookOpen, Settings, LogOut, Menu, X, LayoutGrid } from 'lucide-react'
 import { authClient } from '@/lib/auth-client'
 import { useState } from 'react'
 import Image from 'next/image'
@@ -11,6 +11,7 @@ import logo from '@/public/images/instantcalendarlogo.svg'
 const navigation = [
   { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
   { name: 'Calendar', href: '/calendar', icon: Calendar },
+  { name: 'Services', href: '/services', icon: LayoutGrid },
   { name: 'Bookings', href: '/bookings', icon: BookOpen },
   { name: 'Settings', href: '/settings', icon: Settings },
 ]
