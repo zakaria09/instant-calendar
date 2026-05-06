@@ -1,19 +1,93 @@
 'use client'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import FullCalendar from '@fullcalendar/react'
 import timeGridPlugin from '@fullcalendar/timegrid'
 import interactionPlugin from '@fullcalendar/interaction'
-import { EditAvailabilityDialog, type AvailabilityState } from "@/components/EditAvailabilityDialog"
+import { AvailabilityState, EditAvailabilityDialog } from "@/components/EditAvailabilityDialog"
 
-// Map day keys to FullCalendar day numbers (0=Sunday, 1=Monday, ..., 6=Saturday)
-const DAY_TO_FC_NUMBER: Record<string, number> = {
-  sunday: 0,
-  monday: 1,
-  tuesday: 2,
-  wednesday: 3,
-  thursday: 4,
-  friday: 5,
-  saturday: 6,
+type ApiAvailabilityDay = 'mon' | 'tue' | 'wed' | 'thu' | 'fri' | 'sat' | 'sun'
+
+interface ApiAvailabilityItem {
+  day: ApiAvailabilityDay
+  startTime: string
+  endTime: string
+}
+
+interface ApiAvailabilityResponse {
+  availability: ApiAvailabilityItem[]
+}
+
+const DAY_SHORT_TO_FULL: Record<ApiAvailabilityDay, keyof AvailabilityState['customDays']> = {
+  mon: 'monday',
+  tue: 'tuesday',
+  wed: 'wednesday',
+  thu: 'thursday',
+  fri: 'friday',
+  sat: 'saturday',
+  sun: 'sunday',
+}
+
+const DAY_SHORT_TO_FC_NUMBER: Record<ApiAvailabilityDay, number> = {
+  mon: 1,
+  tue: 2,
+  wed: 3,
+  thu: 4,
+  fri: 5,
+  sat: 6,
+  sun: 0,
+}
+
+const fetchAvailability = async (): Promise<ApiAvailabilityResponse> => {
+  const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/calendar/availability`, {
+    method: 'GET',
+    credentials: 'include',
+    cache: 'no-store',
+  })
+
+  if (!response.ok) {
+    throw new Error(response.statusText)
+  }
+
+  return response.json()
+}
+
+const mapApiAvailabilityToState = (items: ApiAvailabilityItem[]): AvailabilityState | null => {
+  if (!items.length) return null
+
+  const customDays: AvailabilityState['customDays'] = {
+    monday: false,
+    tuesday: false,
+    wednesday: false,
+    thursday: false,
+    friday: false,
+    saturday: false,
+    sunday: false,
+  }
+
+  items.forEach((item) => {
+    customDays[DAY_SHORT_TO_FULL[item.day]] = true
+  })
+
+  const first = items[0]
+
+  return {
+    dayPreset: 'custom',
+    customDays,
+    startTime: first.startTime,
+    endTime: first.endTime,
+  }
+}
+
+const mapStateToApiAvailability = (state: AvailabilityState): ApiAvailabilityItem[] => {
+  return Object.entries(state.customDays)
+    .filter(([, selected]) => selected)
+    .map(([day]) => ({
+      day: (
+        Object.entries(DAY_SHORT_TO_FULL).find(([, fullDay]) => fullDay === day)?.[0] ?? 'mon'
+      ) as ApiAvailabilityDay,
+      startTime: state.startTime,
+      endTime: state.endTime,
+    }))
 }
 
 export default function CalendarPage() {
@@ -33,16 +107,30 @@ export default function CalendarPage() {
   })
 
   const [availability, setAvailability] = useState<AvailabilityState | null>(null)
+  const [availabilityByDay, setAvailabilityByDay] = useState<ApiAvailabilityItem[]>([])
+
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const data = await fetchAvailability()
+        setAvailabilityByDay(data.availability)
+
+        const mappedState = mapApiAvailabilityToState(data.availability)
+        if (mappedState) {
+          setAvailability(mappedState)
+        }
+      } catch (error) {
+        console.error('Failed to fetch availability', error)
+      }
+    }
+
+    fetchData();
+  }, [])
 
   const handleSaveAvailability = (state: AvailabilityState) => {
     setAvailability(state)
-  }
-
-  const getSelectedDaysFC = (availState: AvailabilityState) => {
-    return Object.entries(availState.customDays)
-      .filter(([_, selected]) => selected)
-      .map(([day]) => DAY_TO_FC_NUMBER[day])
-      .sort((a, b) => a - b)
+    setAvailabilityByDay(mapStateToApiAvailability(state))
   }
 
   return (
@@ -73,15 +161,11 @@ export default function CalendarPage() {
           firstDay={1}
           allDaySlot={false}
           nowIndicator={true}
-          businessHours={availability ? {
-            daysOfWeek: getSelectedDaysFC(availability),
-            startTime: availability.startTime,
-            endTime: availability.endTime,
-          } : {
-            daysOfWeek: [1, 2, 3, 4, 5],
-            startTime: '09:00',
-            endTime: '17:00',
-          }}
+          businessHours={availabilityByDay.map((item) => ({
+            daysOfWeek: [DAY_SHORT_TO_FC_NUMBER[item.day]],
+            startTime: item.startTime,
+            endTime: item.endTime,
+          }))}
           dayHeaderFormat={{
             day: 'numeric',
             weekday: 'short',

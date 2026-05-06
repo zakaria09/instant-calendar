@@ -1,8 +1,12 @@
 import { integer, pgTable, serial, text, timestamp } from 'drizzle-orm/pg-core'
+import { user } from "./auth-schema"
 
 export const calendars = pgTable('calendars', {
   id: serial('id').primaryKey(),
-  userId: text('user_id').notNull(),
+  userId: text('user_id')
+    .notNull()
+    .unique()
+    .references(() => user.id, { onDelete: 'cascade' }),
   name: text('name').notNull(),
   createdAt: timestamp('created_at').defaultNow(),
 })

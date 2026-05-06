@@ -312,6 +312,28 @@ export default function OnboardingPage() {
     }
   };
 
+  const handleFormSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+
+    if (currentStep === OnboardingSteps.Name) {
+      if (!isSavingProfile) {
+        await handleNameNext();
+      }
+      return;
+    }
+
+    if (currentStep === OnboardingSteps.Availability) {
+      if (!isSavingAvailability) {
+        await handleAvailabilityNext();
+      }
+      return;
+    }
+
+    if (!isSubmitting && !isCheckingSlug) {
+      await handleSubmit();
+    }
+  };
+
   // ─── Render ───
 
   const subtitles: Record<OnboardingSteps, string> = {
@@ -342,7 +364,10 @@ export default function OnboardingPage() {
         />
 
         {/* Form Card */}
-        <div className="bg-white rounded-xl border border-[#E8E2DC] shadow-sm p-6">
+        <form
+          className="bg-white rounded-xl border border-[#E8E2DC] shadow-sm p-6"
+          onSubmit={handleFormSubmit}
+        >
 
           {/* ─── Step 1: Name ─── */}
           {currentStep === OnboardingSteps.Name && (
@@ -356,11 +381,10 @@ export default function OnboardingPage() {
                 autoFocus
               />
               <button
-                type="button"
-                onClick={handleNameNext}
+                type="submit"
                 disabled={isSavingProfile}
                 className="w-full mt-2 h-11 rounded-lg bg-[#6B4C3B] text-white text-sm font-medium
-                  hover:bg-[#5A3E30] active:bg-[#4A3226] transition-colors duration-150
+                  cursor-pointer hover:bg-[#5A3E30] active:bg-[#4A3226] transition-colors duration-150
                   disabled:opacity-50 disabled:cursor-not-allowed
                   focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#6B4C3B] focus-visible:ring-offset-2"
               >
@@ -456,11 +480,10 @@ export default function OnboardingPage() {
                   Back
                 </button>
                 <button
-                  type="button"
-                  onClick={handleAvailabilityNext}
+                  type="submit"
                   disabled={isSavingAvailability}
                   className="flex-1 h-11 rounded-lg bg-[#6B4C3B] text-white text-sm font-medium
-                    hover:bg-[#5A3E30] active:bg-[#4A3226] transition-colors duration-150
+                    cursor-pointer hover:bg-[#5A3E30] active:bg-[#4A3226] transition-colors duration-150
                     disabled:opacity-50 disabled:cursor-not-allowed
                     focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#6B4C3B] focus-visible:ring-offset-2"
                 >
@@ -547,8 +570,7 @@ export default function OnboardingPage() {
                   Back
                 </button>
                 <button
-                  type="button"
-                  onClick={handleSubmit}
+                  type="submit"
                   disabled={isSubmitting || isCheckingSlug}
                   className="flex-1 h-11 rounded-lg bg-[#6B4C3B] text-white text-sm font-medium
                     hover:bg-[#5A3E30] active:bg-[#4A3226] transition-colors duration-150
@@ -567,7 +589,7 @@ export default function OnboardingPage() {
               </div>
             </div>
           )}
-        </div>
+        </form>
 
         <p className="text-center text-xs text-[#B5AAA2] mt-6">
           You can change these later in settings

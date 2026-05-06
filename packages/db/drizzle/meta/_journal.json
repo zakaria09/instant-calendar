@@ -22,6 +22,13 @@
       "when": 1777987362791,
       "tag": "0002_first_ser_duncan",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1778065028395,
+      "tag": "0003_happy_scream",
+      "breakpoints": true
     }
   ]
 }

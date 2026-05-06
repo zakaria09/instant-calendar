@@ -4,6 +4,7 @@ import { logger } from 'hono/logger'
 import { serve } from '@hono/node-server'
 import { auth } from './lib/auth'
 import onboardingRoutes from './routes/onboarding'
+import calendarRoutes from './routes/calendars'
 
 const app = new Hono()
 
@@ -25,6 +26,9 @@ app.get('/api/health', (c) => c.json({ ok: true }))
 
 // Onboarding
 app.route('/api/onboarding', onboardingRoutes)
+
+// Calendar
+app.route('/api/calendar', calendarRoutes)
 
 export type AppType = typeof app
 
