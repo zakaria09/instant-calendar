@@ -5,6 +5,7 @@ import { serve } from '@hono/node-server'
 import { auth } from './lib/auth'
 import onboardingRoutes from './routes/onboarding'
 import calendarRoutes from './routes/calendars'
+import servicesRoutes from './routes/services'
 
 const app = new Hono()
 
@@ -29,6 +30,9 @@ app.route('/api/onboarding', onboardingRoutes)
 
 // Calendar
 app.route('/api/calendar', calendarRoutes)
+
+// Services
+app.route('/api/services', servicesRoutes)
 
 export type AppType = typeof app
 

@@ -12,6 +12,19 @@ const availabilityEntrySchema = z.array(z.object({
   endTime: z.string().regex(/^([01]\d|2[0-3]):([0-5]\d)$/, "endTime must be in HH:mm format"),
 }))
 
+const checkSlugSchema = z.object({
+  slug: z.string().trim().min(1, 'slug is required'),
+})
+
+const profileSchema = z.object({
+  name: z.string().trim().min(1, 'name is required'),
+})
+
+const organisationSchema = z.object({
+  orgName: z.string().trim().min(1, 'orgName is required'),
+  orgSlug: z.string().trim().min(1, 'orgSlug is required'),
+})
+
 const onboardingRoutes = new Hono();
 
 // Check onboarding status
@@ -43,14 +56,14 @@ onboardingRoutes.post("/check-slug", async (c) => {
   }
  
   const body = await c.req.json();
-  const { slug } = body;
- 
-  if (!slug?.trim()) {
-    return c.json({ error: "slug is required" }, 400);
+  const parsed = checkSlugSchema.safeParse(body);
+
+  if (!parsed.success) {
+    return c.json({ error: parsed.error.issues[0]?.message ?? 'Invalid request body' }, 400);
   }
  
   const result = await auth.api.checkOrganizationSlug({
-    body: { slug },
+    body: { slug: parsed.data.slug },
   });
  
   // Returns { status: true } if available, { status: false } if taken
@@ -68,11 +81,13 @@ onboardingRoutes.post("/profile", async (c) => {
   }
 
   const body = await c.req.json();
-  const { name } = body;
+  const parsed = profileSchema.safeParse(body);
 
-  if (!name?.trim()) {
-    return c.json({ error: "name is required" }, 400);
+  if (!parsed.success) {
+    return c.json({ error: parsed.error.issues[0]?.message ?? 'Invalid request body' }, 400);
   }
+
+  const { name } = parsed.data;
 
   if (session.user.name !== name) {
     await db
@@ -153,11 +168,13 @@ onboardingRoutes.post("/organisation", async (c) => {
   }
 
   const body = await c.req.json();
-  const { orgName, orgSlug } = body;
+  const parsed = organisationSchema.safeParse(body);
 
-  if (!orgName?.trim() || !orgSlug?.trim()) {
-    return c.json({ error: "orgName and orgSlug are required" }, 400);
+  if (!parsed.success) {
+    return c.json({ error: parsed.error.issues[0]?.message ?? 'Invalid request body' }, 400);
   }
+
+  const { orgName, orgSlug } = parsed.data;
 
   // Idempotency: check if user already has an org
   const existingOrgs = await auth.api.listOrganizations({

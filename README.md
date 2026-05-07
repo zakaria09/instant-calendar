@@ -38,7 +38,7 @@ Built for barbers, nail technicians, personal trainers, therapists, tutors, and 
 ### Prerequisites
 
 - Node.js 20+
-- pnpm
+- pnpm (version pinned in `package.json` via `packageManager` — corepack will use the correct version automatically)
 - Docker (for the database)
 
 ### Local Development
@@ -46,6 +46,7 @@ Built for barbers, nail technicians, personal trainers, therapists, tutors, and 
 1. Clone the repo and install dependencies from the root:
 
 ```bash
+corepack enable pnpm
 pnpm install
 ```
 
@@ -74,10 +75,10 @@ NEXT_PUBLIC_APP_URL=http://localhost:3000
 pnpm run docker:db
 ```
 
-4. Run migrations:
+4. Push the schema to the local database:
 
 ```bash
-pnpm --filter @packages/db db:migrate
+pnpm --filter @packages/db db:push
 ```
 
 5. Start both apps:
@@ -111,23 +112,47 @@ Web runs on [localhost:3000](http://localhost:3000) · API runs on [localhost:30
 
 ## Database
 
-Migrations are managed with Drizzle Kit and run automatically on every production deploy.
+### Local vs production workflow
+
+Local and production use **different strategies** — mixing them causes migration drift and broken deploys.
+
+| Environment | Command | How it works |
+|---|---|---|
+| **Local dev** | `db:push` | Applies the current Drizzle schema directly to the database. No migration files. Fast iteration. |
+| **Production** | `db:generate` → `db:migrate` | Generates versioned SQL migration files, then applies them in order. Migrations run automatically on every deploy. |
+
+**The rule:** use `db:push` locally, use `db:generate` + `db:migrate` for production. Never run `db:migrate` against your local database — it can conflict with changes already applied by `db:push`. If your local database gets into a bad state, wipe it and re-push:
 
 ```bash
-# Generate a new migration
+pnpm run docker:db:down
+docker volume rm $(docker volume ls -q | grep instant-calendar)
+pnpm run docker:db
+pnpm --filter @packages/db db:push
+```
+
+### Typical schema change workflow
+
+1. Edit the Drizzle schema in `packages/db`
+2. Run `pnpm --filter @packages/db db:push` to apply locally and test
+3. When ready to deploy, generate a migration: `pnpm --filter @packages/db db:generate`
+4. Commit the schema changes and the new migration file in `packages/db/drizzle/`
+5. Push to `main` — the pipeline will run `db:migrate` in production
+
+### Commands
+
+```bash
+# Push schema directly (local dev only)
+pnpm --filter @packages/db db:push
+
+# Generate a new migration file (before deploying)
 pnpm --filter @packages/db db:generate
 
-# Run migrations locally
+# Run migrations (production — runs automatically on deploy)
 pnpm --filter @packages/db db:migrate
-
-# Push schema directly to the database (no migration files — useful for local dev)
-pnpm --filter @packages/db db:push
 
 # Open Drizzle Studio
 pnpm --filter @packages/db db:studio
 ```
-
-> **`db:push` vs `db:migrate`** — `db:push` applies your Drizzle schema directly to the database without creating migration files. It's convenient during local development when you're iterating on the schema. For production, use `db:generate` + `db:migrate` to create versioned, reviewable migration files.
 
 > **Migration history table location** — Drizzle stores migration history in `drizzle.__drizzle_migrations` (schema `drizzle`), not `public.__drizzle_migrations`.
 >
@@ -190,6 +215,14 @@ Pushes to `main` trigger the GitHub Actions pipeline which:
 - **VPS** — DigitalOcean `s-1vcpu-2gb` droplet in `lon1`
 - **Reverse proxy** — Caddy with automatic HTTPS via Let's Encrypt
 - **State** — Terraform remote state stored in DigitalOcean Spaces
+
+### pnpm version
+
+pnpm is pinned via the `packageManager` field in the root `package.json`. This ensures Docker builds, CI, and local development all use the same version. If you need to upgrade pnpm:
+
+1. Update the `packageManager` field in `package.json`
+2. Run `corepack enable pnpm` and `pnpm install`
+3. Commit the updated `package.json` and `pnpm-lock.yaml`
 
 ### Domains
 

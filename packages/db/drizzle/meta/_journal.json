@@ -36,6 +36,20 @@
       "when": 1778077613479,
       "tag": "0004_open_wind_dancer",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1778171094498,
+      "tag": "0005_pink_frank_castle",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1778171899180,
+      "tag": "0006_chunky_jimmy_woo",
+      "breakpoints": true
     }
   ]
 }

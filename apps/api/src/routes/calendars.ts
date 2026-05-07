@@ -1,19 +1,20 @@
 import { Hono } from 'hono';
-import { auth } from '../lib/auth';
+import { authMiddleware } from '../middleware/auth';
 import { availability, calendars } from '@packages/db';
 import { db } from '@packages/db';
 import { eq } from 'drizzle-orm';
 
-const calendarRoutes = new Hono();
+type RouteVariables = {
+  user: { id: string; name?: string | null } | string;
+};
+
+const calendarRoutes = new Hono<{ Variables: RouteVariables }>();
+
+calendarRoutes.use('*', authMiddleware);
 
 calendarRoutes.get('/availability', async (c) => {
-  const session = await auth.api.getSession({
-    headers: c.req.raw.headers,
-  });
-
-  if (!session) {
-    return c.json({ error: 'Unauthorized' }, 401);
-  };
+const currentUser = c.get('user') as { id: string } | string;
+const userId = typeof currentUser === 'string' ? currentUser : currentUser.id;
 
 const availabilityData = await db
   .select({
@@ -23,7 +24,7 @@ const availabilityData = await db
   })
   .from(availability)
   .innerJoin(calendars, eq(availability.calendarId, calendars.id))
-  .where(eq(calendars.userId, session.user.id));
+  .where(eq(calendars.userId, userId));
 
   return c.json({ availability: availabilityData });
 });
