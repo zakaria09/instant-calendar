@@ -19,5 +19,6 @@
     "overrides": {
       "drizzle-orm": "0.44.2"
     }
-  }
+  },
+  "packageManager": "pnpm@10.16.1"
 }
