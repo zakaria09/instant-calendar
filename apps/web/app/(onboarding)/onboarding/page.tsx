@@ -1,6 +1,8 @@
 'use client'
 import Stepper from '@/app/components/Stepper/Stepper';
+import { useMutation, useQuery } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
+import { useEffect } from 'react';
 import React from 'react'
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? '';
@@ -36,6 +38,10 @@ type OnboardingState = {
   availability: Record<DayKey, DayAvailability>;
   organisationName: string;
   slug: string;
+}
+
+type SlugAvailabilityResponse = {
+  status: boolean;
 }
 
 const DEFAULT_HOURS: DayAvailability = { enabled: true, startTime: '09:00', endTime: '17:00' };
@@ -90,14 +96,102 @@ export default function OnboardingPage() {
   const [completedSteps, setCompletedSteps] = React.useState<Set<number>>(new Set());
   const [formData, setFormData] = React.useState<OnboardingState>(EMPTY_STATE);
   const [slugManuallyEdited, setSlugManuallyEdited] = React.useState(false);
-  const [slugConflict, setSlugConflict] = React.useState(false);
-  const [isCheckingSlug, setIsCheckingSlug] = React.useState(false);
-  const [isSubmitting, setIsSubmitting] = React.useState(false);
-  const [isSavingProfile, setIsSavingProfile] = React.useState(false);
-  const [isSavingAvailability, setIsSavingAvailability] = React.useState(false);
+  const [debouncedSlug, setDebouncedSlug] = React.useState('');
   const [errors, setErrors] = React.useState<Partial<Record<string, string>>>({});
 
-  const slugDebounceRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => {
+    const nextSlug = formData.slug.trim();
+
+    const timeoutId = window.setTimeout(() => {
+      setDebouncedSlug(nextSlug);
+    }, 400);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [formData.slug]);
+
+  const slugAvailabilityQuery = useQuery<SlugAvailabilityResponse>({
+    queryKey: ['onboarding', 'slug', debouncedSlug],
+    enabled: currentStep === OnboardingSteps.Organisation && debouncedSlug.length > 0,
+    retry: false,
+    queryFn: async () => {
+      const res = await fetch(`${API_BASE}/api/onboarding/check-slug`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ slug: debouncedSlug }),
+      });
+
+      if (!res.ok) {
+        throw new Error('Failed to check slug availability');
+      }
+
+      return res.json();
+    },
+  });
+
+  const saveProfileMutation = useMutation({
+    mutationFn: async (name: string) => {
+      const res = await fetch(`${API_BASE}/api/onboarding/profile`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ name }),
+      });
+
+      if (!res.ok) {
+        const data = await res.json().catch(() => null);
+        throw new Error(data?.error || 'Failed to save profile');
+      }
+
+      return res.json();
+    },
+  });
+
+  const saveAvailabilityMutation = useMutation({
+    mutationFn: async (availability: Array<{ day: DayKey; startTime: string; endTime: string }>) => {
+      const res = await fetch(`${API_BASE}/api/onboarding/availability`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ availability }),
+      });
+
+      if (!res.ok) {
+        const data = await res.json().catch(() => null);
+        throw new Error(data?.error || 'Failed to save availability');
+      }
+
+      return res.json();
+    },
+  });
+
+  const completeOnboardingMutation = useMutation({
+    mutationFn: async ({ orgName, orgSlug }: { orgName: string; orgSlug: string }) => {
+      const res = await fetch(`${API_BASE}/api/onboarding/organisation`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ orgName, orgSlug }),
+      });
+
+      if (!res.ok) {
+        const data = await res.json().catch(() => null);
+        const error = new Error(data?.error || 'Something went wrong') as Error & { status?: number };
+        error.status = res.status;
+        throw error;
+      }
+
+      return res.json();
+    },
+  });
+
+  const activeSlug = formData.slug.trim();
+  const isSlugSettled = debouncedSlug === activeSlug;
+  const slugConflict = activeSlug.length > 0 && isSlugSettled && slugAvailabilityQuery.data?.status === false;
+  const isCheckingSlug = activeSlug.length > 0 && (!isSlugSettled || slugAvailabilityQuery.isFetching);
+  const isSavingProfile = saveProfileMutation.isPending;
+  const isSavingAvailability = saveAvailabilityMutation.isPending;
+  const isSubmitting = completeOnboardingMutation.isPending;
 
   // ─── Field updates ───
 
@@ -108,11 +202,6 @@ export default function OnboardingPage() {
     if (field === 'organisationName' && !slugManuallyEdited) {
       const newSlug = generateSlug(value);
       setFormData(prev => ({ ...prev, slug: newSlug }));
-      if (newSlug) {
-        debouncedSlugCheck(newSlug);
-      } else {
-        setSlugConflict(false);
-      }
     }
   };
 
@@ -151,32 +240,6 @@ export default function OnboardingPage() {
     setSlugManuallyEdited(true);
     setFormData(prev => ({ ...prev, slug: sanitised }));
     setErrors(prev => ({ ...prev, slug: undefined }));
-    if (sanitised) {
-      debouncedSlugCheck(sanitised);
-    } else {
-      setSlugConflict(false);
-    }
-  };
-
-  const debouncedSlugCheck = (slug: string) => {
-    if (slugDebounceRef.current) clearTimeout(slugDebounceRef.current);
-    setIsCheckingSlug(true);
-    slugDebounceRef.current = setTimeout(async () => {
-      try {
-        const res = await fetch(`${API_BASE}/api/onboarding/check-slug`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          credentials: 'include',
-          body: JSON.stringify({ slug }),
-        });
-        const data = await res.json();
-        setSlugConflict(data.status === false);
-      } catch {
-        setSlugConflict(false);
-      } finally {
-        setIsCheckingSlug(false);
-      }
-    }, 400);
   };
 
   // ─── Validation ───
@@ -216,33 +279,18 @@ export default function OnboardingPage() {
   const handleNameNext = async () => {
     if (!validateStep(OnboardingSteps.Name)) return;
 
-    setIsSavingProfile(true);
     try {
-      const res = await fetch(`${API_BASE}/api/onboarding/profile`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify({ name: formData.name.trim() }),
-      });
-
-      if (!res.ok) {
-        const data = await res.json().catch(() => null);
-        throw new Error(data?.error || 'Failed to save profile');
-      }
-
+      await saveProfileMutation.mutateAsync(formData.name.trim());
       setCompletedSteps(prev => new Set(prev).add(OnboardingSteps.Name));
       setCurrentStep(OnboardingSteps.Availability);
     } catch (err) {
       setErrors({ name: err instanceof Error ? err.message : 'Failed to save profile. Please try again.' });
-    } finally {
-      setIsSavingProfile(false);
     }
   };
 
   const handleAvailabilityNext = async () => {
     if (!validateStep(OnboardingSteps.Availability)) return;
 
-    setIsSavingAvailability(true);
     try {
       const availability = DAYS
         .filter(d => formData.availability[d.key].enabled)
@@ -252,57 +300,30 @@ export default function OnboardingPage() {
           endTime: formData.availability[d.key].endTime,
         }));
 
-      const res = await fetch(`${API_BASE}/api/onboarding/availability`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify({ availability }),
-      });
-
-      if (!res.ok) {
-        const data = await res.json().catch(() => null);
-        throw new Error(data?.error || 'Failed to save availability');
-      }
-
+      await saveAvailabilityMutation.mutateAsync(availability);
       setCompletedSteps(prev => new Set(prev).add(OnboardingSteps.Availability));
       setCurrentStep(OnboardingSteps.Organisation);
     } catch (err) {
       setErrors({ availability: err instanceof Error ? err.message : 'Failed to save availability. Please try again.' });
-    } finally {
-      setIsSavingAvailability(false);
     }
   };
 
   const handleSubmit = async () => {
     if (!validateStep(OnboardingSteps.Organisation)) return;
 
-    setIsSubmitting(true);
     try {
-      const res = await fetch(`${API_BASE}/api/onboarding/organisation`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify({
-          orgName: formData.organisationName.trim(),
-          orgSlug: formData.slug.trim(),
-        }),
+      await completeOnboardingMutation.mutateAsync({
+        orgName: formData.organisationName.trim(),
+        orgSlug: formData.slug.trim(),
       });
-
-      if (!res.ok) {
-        const data = await res.json().catch(() => null);
-        if (res.status === 409) {
-          setSlugConflict(true);
-          setErrors({ slug: 'This URL was just taken — try another' });
-          return;
-        }
-        throw new Error(data?.error || 'Something went wrong');
-      }
-
       router.push('/dashboard');
     } catch (err) {
+      if (err instanceof Error && 'status' in err && err.status === 409) {
+        setErrors({ slug: 'This URL was just taken — try another' });
+        return;
+      }
+
       setErrors({ organisationName: err instanceof Error ? err.message : 'Failed to complete setup. Please try again.' });
-    } finally {
-      setIsSubmitting(false);
     }
   };
 
@@ -419,16 +440,16 @@ export default function OnboardingPage() {
                           type="button"
                           onClick={() => toggleDay(key)}
                           className={`
-                            relative w-10 h-[22px] rounded-full transition-colors duration-200 flex-shrink-0
+                            relative h-5.5 w-10 shrink-0 rounded-full transition-colors duration-200
                             ${day.enabled ? 'bg-[#6B4C3B]' : 'bg-gray-200'}
                           `}
                           aria-label={`Toggle ${label}`}
                         >
                           <span
                             className={`
-                              absolute top-[2px] left-[2px] w-[18px] h-[18px] rounded-full bg-white shadow-sm
+                              absolute left-0.5 top-0.5 h-4.5 w-4.5 rounded-full bg-white shadow-sm
                               transition-transform duration-200
-                              ${day.enabled ? 'translate-x-[18px]' : 'translate-x-0'}
+                              ${day.enabled ? 'translate-x-4.5' : 'translate-x-0'}
                             `}
                           />
                         </button>
@@ -458,7 +479,7 @@ export default function OnboardingPage() {
                         )}
                       </div>
                       {dayError && (
-                        <p className="text-xs text-red-500 mt-1 ml-[84px]">{dayError}</p>
+                        <p className="mt-1 ml-21 text-xs text-red-500">{dayError}</p>
                       )}
                     </div>
                   );
@@ -533,7 +554,7 @@ export default function OnboardingPage() {
                       }`}
                   />
                 </div>
-                <div className="mt-1.5 min-h-[20px]">
+                <div className="mt-1.5 min-h-5">
                   {isCheckingSlug && (
                     <p className="text-xs text-[#8C7B72] flex items-center gap-1.5">
                       <LoadingDots />
