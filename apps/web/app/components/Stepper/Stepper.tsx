@@ -13,15 +13,15 @@ export default function Stepper({
   completedSteps: Set<number>;
 }) {
   return (
-    <div className="flex items-center justify-center gap-0 mb-10">
+    <div className="flex items-center justify-center mb-10 px-4">
       {steps.map((label, i) => {
         const stepNum = i + 1;
         const isActive = stepNum === currentStep;
         const isCompleted = completedSteps.has(stepNum);
         const isClickable = stepNum < currentStep || isCompleted;
- 
+
         return (
-          <div key={label} className="flex items-center">
+          <React.Fragment key={label}>
             <div className="flex flex-col items-center">
               <button
                 type="button"
@@ -47,7 +47,7 @@ export default function Stepper({
                 )}
               </button>
               <span
-                className={`mt-2 text-xs font-medium tracking-wide ${
+                className={`mt-2 text-xs font-medium tracking-wide hidden sm:block ${
                   isActive ? "text-[#6B4C3B]" : "text-gray-400"
                 }`}
               >
@@ -56,12 +56,12 @@ export default function Stepper({
             </div>
             {i < steps.length - 1 && (
               <div
-                className={`w-16 h-px mx-2 mb-6 transition-colors duration-200 ${
+                className={`flex-1 h-px mx-2 sm:mb-6 transition-colors duration-200 ${
                   completedSteps.has(stepNum) ? "bg-[#6B4C3B]/30" : "bg-gray-200"
                 }`}
               />
             )}
-          </div>
+          </React.Fragment>
         );
       })}
     </div>
