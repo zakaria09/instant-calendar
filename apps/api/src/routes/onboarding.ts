@@ -50,24 +50,33 @@ onboardingRoutes.post("/check-slug", async (c) => {
   const session = await auth.api.getSession({
     headers: c.req.raw.headers,
   });
- 
+
   if (!session) {
     return c.json({ error: "Unauthorized" }, 401);
   }
- 
+
   const body = await c.req.json();
   const parsed = checkSlugSchema.safeParse(body);
 
   if (!parsed.success) {
-    return c.json({ error: parsed.error.issues[0]?.message ?? 'Invalid request body' }, 400);
+    return c.json({ error: parsed.error.issues[0]?.message ?? "Invalid request body" }, 400);
   }
- 
-  const result = await auth.api.checkOrganizationSlug({
-    body: { slug: parsed.data.slug },
-  });
- 
-  // Returns { status: true } if available, { status: false } if taken
-  return c.json(result);
+
+  try {
+    const result = await auth.api.checkOrganizationSlug({
+      body: { slug: parsed.data.slug },
+    });
+    return c.json(result);
+  } catch (error) {
+    if (
+      error instanceof Error &&
+      "status" in error &&
+      error.status === "BAD_REQUEST"
+    ) {
+      return c.json({ status: false });
+    }
+    throw error;
+  }
 });
 
 // Step 1: Update profile
@@ -193,12 +202,19 @@ onboardingRoutes.post("/organisation", async (c) => {
   }
 
   // Check slug availability
-  const slugCheck = await auth.api.checkOrganizationSlug({
-    body: { slug: orgSlug },
-  });
-
-  if (slugCheck.status === false) {
-    return c.json({ error: "This slug is already taken" }, 409);
+  try {
+    await auth.api.checkOrganizationSlug({
+      body: { slug: orgSlug },
+    });
+  } catch (error) {
+    if (
+      error instanceof Error &&
+      "status" in error &&
+      error.status === "BAD_REQUEST"
+    ) {
+      return c.json({ error: "This slug is already taken" }, 409);
+    }
+    throw error;
   }
 
   // Create and set active
