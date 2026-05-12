@@ -227,4 +227,22 @@ onboardingRoutes.post("/organisation", async (c) => {
   return c.json({ organization: org });
 });
 
+// Final step: complete onboarding
+onboardingRoutes.post('/complete', async (c) => {
+  const session = await auth.api.getSession({
+    headers: c.req.raw.headers,
+  });
+
+  if (!session) {
+    return c.json({ error: 'Unauthorized' }, 401);
+  }
+
+  await db
+    .update(user)
+    .set({ isOnboarded: true, updatedAt: new Date() })
+    .where(eq(user.id, session.user.id));
+
+  return c.json({ success: true, isOnboarded: true });
+});
+
 export default onboardingRoutes;

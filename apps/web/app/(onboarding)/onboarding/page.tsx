@@ -121,8 +121,7 @@ export default function OnboardingPage() {
     try {
       await saveServicesMutation.mutateAsync(services);
       form.completeStep(OnboardingSteps.Services);
-      // TODO: Push to an onboard complete route to call endpoint complete onboarding and then redirect to dashboard
-      router.push('/dashboard');
+      router.push('/onboarding/check-complete');
     } catch (err) {
       form.setError(
         'services',

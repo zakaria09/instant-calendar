@@ -91,6 +91,34 @@ export function useOnboardingMutations() {
   };
 }
 
+export function useCheckOnboardingCompletion() {
+  return useQuery({
+    queryKey: ['onboarding-completion'],
+    queryFn: async () => {
+      const completeRes = await fetch(`${API_BASE}/api/onboarding/complete`, {
+        method: 'POST',
+        credentials: 'include',
+      });
+
+      if (!completeRes.ok) {
+        throw new Error('Failed to complete onboarding');
+      }
+
+      const res = await fetch(`${API_BASE}/api/onboarding/status`, {
+        method: 'GET',
+        credentials: 'include',
+      });
+
+      if (!res.ok) {
+        throw new Error('Failed to check onboarding completion');
+      }
+
+      const data = (await res.json()) as { isOnboarded?: boolean };
+      return { completed: data.isOnboarded === true };
+    },
+  });
+}
+
 export function useSlugAvailability(slug: string, enabled: boolean) {
   return useQuery<SlugAvailabilityResponse>({
     queryKey: ['onboarding', 'slug', slug],
