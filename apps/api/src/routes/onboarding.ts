@@ -166,7 +166,6 @@ onboardingRoutes.post("/availability", async (c) => {
 
 });
 
-// Step 3: Create organisation
 onboardingRoutes.post("/organisation", async (c) => {
   const session = await auth.api.getSession({
     headers: c.req.raw.headers,
@@ -185,7 +184,6 @@ onboardingRoutes.post("/organisation", async (c) => {
 
   const { orgName, orgSlug } = parsed.data;
 
-  // Idempotency: check if user already has an org
   const existingOrgs = await auth.api.listOrganizations({
     headers: c.req.raw.headers,
   });
@@ -198,10 +196,9 @@ onboardingRoutes.post("/organisation", async (c) => {
       headers: c.req.raw.headers,
     });
 
-    return c.json({ organization: org, alreadyOnboarded: true });
+    return c.json({ organization: org });
   }
 
-  // Check slug availability
   try {
     await auth.api.checkOrganizationSlug({
       body: { slug: orgSlug },
@@ -217,7 +214,6 @@ onboardingRoutes.post("/organisation", async (c) => {
     throw error;
   }
 
-  // Create and set active
   const org = await auth.api.createOrganization({
     body: { name: orgName, slug: orgSlug },
     headers: c.req.raw.headers,
@@ -228,13 +224,7 @@ onboardingRoutes.post("/organisation", async (c) => {
     headers: c.req.raw.headers,
   });
 
-  // Mark onboarding complete
-  await db
-    .update(user)
-    .set({ isOnboarded: true, updatedAt: new Date() })
-    .where(eq(user.id, session.user.id));
-
-  return c.json({ organization: org, alreadyOnboarded: false });
+  return c.json({ organization: org });
 });
 
 export default onboardingRoutes;

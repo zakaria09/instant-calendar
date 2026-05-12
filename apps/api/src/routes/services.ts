@@ -10,18 +10,26 @@ type RouteVariables = {
 };
 
 const appendServiceSchema = z.object({
-  service: z.string().trim().min(1, 'service is required'),
-  organizationId: z.string(),
+  services: z.array(z.object({
+    name: z.string().trim().min(1, 'Service name is required'),
+    duration: z.number().int().positive('Duration must be a positive number'),
+    price: z.string().regex(/^\d+(\.\d{1,2})?$/, 'Price must be a valid amount'),
+  })).min(1, 'At least one service is required'),
 });
 
 const servicesRoute = new Hono<{Variables: RouteVariables}>();
 
-servicesRoute.use('*', authMiddleware);
+// servicesRoute.use('*', authMiddleware);
 
 servicesRoute.post('/append', async (c) => {
   const session = await auth.api.getSession({
     headers: c.req.raw.headers,
   });
+
+  if (!session) {
+    return c.json({error: 'Unauthorized'}, 401);
+  }
+
   const body = await c.req.json();
   const parsed = appendServiceSchema.safeParse(body);
 
@@ -32,13 +40,27 @@ servicesRoute.post('/append', async (c) => {
     );
   }
 
-  await db.insert(services).values({
-    userId: session?.user.id as string,
-    name: parsed.data.service,
-    organizationId: parsed.data.organizationId,
-  });
+  const [membership] = await db
+    .select({ organizationId: member.organizationId })
+    .from(member)
+    .where(eq(member.userId, session.user.id))
+    .limit(1);
 
-  return c.json({success: true});
+  if (!membership) {
+    return c.json({ error: 'No organisation found' }, 404);
+  }
+
+await db.insert(services).values(
+  parsed.data.services.map((service) => ({
+    userId: session.user.id,
+    name: service.name,
+    duration: service.duration,
+    price: service.price,
+    organizationId: membership.organizationId,
+  }))
+);
+
+  return c.json({ success: true });
 });
 
 servicesRoute.get('/list', async (c) => {
@@ -46,7 +68,9 @@ servicesRoute.get('/list', async (c) => {
     headers: c.req.raw.headers,
   });
 
-  const userId = session?.user.id as string;
+  if (!session) {
+    return c.json({error: 'Unauthorized'}, 401);
+  }
 
   const membership = await db
     .select({
@@ -55,21 +79,26 @@ servicesRoute.get('/list', async (c) => {
     })
     .from(member)
     .innerJoin(organization, eq(organization.id, member.organizationId))
-    .where(eq(member.userId, userId))
+    .where(eq(member.userId, session.user.id))
     .limit(1);
 
   if (!membership.length) {
-    return c.json({services: [], organizations: membership});
+    return c.json({ organization: null, services: [] });
   }
 
-  const userServices = await db
-    .select()
+  const orgServices = await db
+    .select({
+      id: services.id,
+      name: services.name,
+      duration: services.duration,
+      price: services.price,
+    })
     .from(services)
     .where(eq(services.organizationId, membership[0].organizationId));
 
   return c.json({
-    services: userServices,
-    organizations: membership,
+    organization: membership[0],
+    services: orgServices,
   });
 });
 

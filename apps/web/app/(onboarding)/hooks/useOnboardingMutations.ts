@@ -44,7 +44,7 @@ export function useOnboardingMutations() {
     },
   });
 
-  const completeOnboardingMutation = useMutation({
+  const saveOrganisationMutation = useMutation({
     mutationFn: async ({ orgName, orgSlug }: { orgName: string; orgSlug: string }) => {
       const res = await fetch(`${API_BASE}/api/onboarding/organisation`, {
         method: 'POST',
@@ -64,10 +64,30 @@ export function useOnboardingMutations() {
     },
   });
 
+  const saveServicesMutation = useMutation({
+    mutationFn: async (services: Array<{ name: string; duration: number; price: string }>) => {
+      const res = await fetch(`${API_BASE}/api/services/append`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ services }),
+      });
+
+      if (!res.ok) {
+        const data = await res.json().catch(() => null);
+        console.error('Failed to save services:', data);
+        throw new Error(data?.error || 'Failed to save services');
+      }
+
+      return res.json();
+    },
+  });
+
   return {
     saveProfileMutation,
     saveAvailabilityMutation,
-    completeOnboardingMutation,
+    saveOrganisationMutation,
+    saveServicesMutation,
   };
 }
 

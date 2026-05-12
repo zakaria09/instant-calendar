@@ -1,6 +1,6 @@
-import { pgTable, serial, text } from 'drizzle-orm/pg-core';
 import { user } from './auth-schema';
 import { organization } from './org-schema';
+import { pgTable, serial, text, integer, decimal } from 'drizzle-orm/pg-core';
 
 export const services = pgTable('services', {
   id: serial('id').primaryKey(),
@@ -12,4 +12,6 @@ export const services = pgTable('services', {
     .references(() => organization.id, { onDelete: 'cascade' }),
   name: text('name').notNull(),
   description: text('description'),
+  duration: integer('duration').notNull(), // minutes
+  price: decimal('price', { precision: 10, scale: 2 }).notNull(),
 });

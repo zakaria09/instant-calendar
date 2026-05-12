@@ -14,7 +14,8 @@ import {useDebounce} from '../hooks/useDebounce';
 import {NameStep} from '../components/steps/NameStep';
 import {AvailabilityStep} from '../components/steps/AvailabilityStep';
 import {OrganisationStep} from '../components/steps/OrganisationStep';
-import ServiceStep from '../components/steps/ServiceStep';
+import ServiceStep, { ServiceEntry } from '../components/steps/ServiceStep';
+import { orgStorage } from '@/utils/org-storage';
 
 const STEPS = ['Your Name', 'Organisation', 'Availability', 'Services'];
 
@@ -31,7 +32,8 @@ export default function OnboardingPage() {
   const {
     saveProfileMutation,
     saveAvailabilityMutation,
-    completeOnboardingMutation,
+    saveOrganisationMutation,
+    saveServicesMutation,
   } = useOnboardingMutations();
 
   const debouncedSlug = useDebounce(form.formData.slug.trim(), 400);
@@ -94,10 +96,11 @@ export default function OnboardingPage() {
     if (!form.validateOrganisation(slugConflict)) return;
 
     try {
-      await completeOnboardingMutation.mutateAsync({
+      const newOrg = await saveOrganisationMutation.mutateAsync({
         orgName: form.formData.organisationName.trim(),
         orgSlug: form.formData.slug.trim(),
       });
+      orgStorage.set(newOrg.organization);
       form.completeStep(OnboardingSteps.Organisation);
     } catch (err) {
       if (err instanceof Error && 'status' in err && err.status === 409) {
@@ -110,6 +113,22 @@ export default function OnboardingPage() {
         err instanceof Error
           ? err.message
           : 'Failed to complete setup. Please try again.',
+      );
+    }
+  };
+
+  const handleServicesComplete = async (services: Omit<ServiceEntry, 'id'>[]) => {
+    try {
+      await saveServicesMutation.mutateAsync(services);
+      form.completeStep(OnboardingSteps.Services);
+      // TODO: Push to an onboard complete route to call endpoint complete onboarding and then redirect to dashboard
+      router.push('/dashboard');
+    } catch (err) {
+      form.setError(
+        'services',
+        err instanceof Error && err.message
+          ? err.message
+          : 'We had trouble saving your services. Please try again.',
       );
     }
   };
@@ -134,6 +153,11 @@ export default function OnboardingPage() {
         />
 
         <form className='bg-white rounded-xl border border-[#E8E2DC] shadow-sm p-6'>
+          {form.errors.services && form.currentStep === OnboardingSteps.Services && (
+            <div className='mb-4 p-3 bg-red-50 border border-red-200 rounded-lg'>
+              <p className='text-sm text-red-700'>{form.errors.services}</p>
+            </div>
+          )}
           {form.currentStep === OnboardingSteps.Name && (
             <NameStep
               value={form.formData.name}
@@ -151,7 +175,7 @@ export default function OnboardingPage() {
               errors={form.errors}
               isCheckingSlug={isCheckingSlug}
               slugConflict={slugConflict}
-              isSubmitting={completeOnboardingMutation.isPending}
+              isSubmitting={saveOrganisationMutation.isPending}
               onOrgNameChange={(v) => form.updateField('organisationName', v)}
               onSlugChange={form.handleSlugChange}
               onBack={() => form.setCurrentStep(OnboardingSteps.Name)}
@@ -172,7 +196,11 @@ export default function OnboardingPage() {
           )}
 
           {form.currentStep === OnboardingSteps.Services && (
-            <ServiceStep />
+            <ServiceStep
+              onComplete={handleServicesComplete}
+              onBack={() => form.setCurrentStep(OnboardingSteps.Availability)}
+              isSubmitting={saveServicesMutation.isPending}
+            />
           )}
         </form>
 
