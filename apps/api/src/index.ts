@@ -6,6 +6,7 @@ import { auth } from './lib/auth'
 import onboardingRoutes from './routes/onboarding'
 import calendarRoutes from './routes/calendars'
 import servicesRoutes from './routes/services'
+import organisationRoute from './routes/organisation'
 
 const app = new Hono()
 
@@ -33,6 +34,9 @@ app.route('/api/calendar', calendarRoutes)
 
 // Services
 app.route('/api/services', servicesRoutes)
+
+// Organisation
+app.route('/api/organisation', organisationRoute)
 
 export type AppType = typeof app
 

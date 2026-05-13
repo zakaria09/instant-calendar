@@ -1,7 +1,6 @@
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { DayKey } from './useOnboardingForm';
-
-const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? '';
+import { API_BASE } from '@/utils/constants';
 
 type SlugAvailabilityResponse = {
   status: boolean;

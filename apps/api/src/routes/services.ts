@@ -19,7 +19,7 @@ const appendServiceSchema = z.object({
 
 const servicesRoute = new Hono<{Variables: RouteVariables}>();
 
-// servicesRoute.use('*', authMiddleware);
+servicesRoute.use('*', authMiddleware);
 
 servicesRoute.post('/append', async (c) => {
   const session = await auth.api.getSession({
