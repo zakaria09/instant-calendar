@@ -1,10 +1,11 @@
 import { Hono } from "hono";
 import { auth } from "../lib/auth";
-import { availability, db } from "@packages/db";
+import { availability, db, invitation, organization } from "@packages/db";
 import { user } from "@packages/db";
 import { eq } from "drizzle-orm";
 import { calendars } from '@packages/db';
 import {z} from 'zod'
+import { and } from "drizzle-orm";
 
 const availabilityEntrySchema = z.array(z.object({
   day: z.enum(['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun']),
@@ -225,6 +226,39 @@ onboardingRoutes.post("/organisation", async (c) => {
   });
 
   return c.json({ organization: org });
+});
+
+// Check if user has a pending invitation
+onboardingRoutes.get("/invite-status", async (c) => {
+  const session = await auth.api.getSession({
+    headers: c.req.raw.headers,
+  });
+
+  if (!session) {
+    return c.json({ error: "Unauthorized" }, 401);
+  }
+
+  const [pendingInvite] = await db
+    .select({
+      invitationId: invitation.id,
+      organizationId: invitation.organizationId,
+      organizationName: organization.name,
+      role: invitation.role,
+    })
+    .from(invitation)
+    .innerJoin(organization, eq(invitation.organizationId, organization.id))
+    .where(
+      and(
+        eq(invitation.email, session.user.email),
+        eq(invitation.status, "pending")
+      )
+    )
+    .limit(1);
+
+  return c.json({
+    hasInvite: !!pendingInvite,
+    invite: pendingInvite ?? null,
+  });
 });
 
 // Final step: complete onboarding

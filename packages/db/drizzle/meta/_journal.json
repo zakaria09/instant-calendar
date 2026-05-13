@@ -64,6 +64,13 @@
       "when": 1778579427627,
       "tag": "0008_gifted_grim_reaper",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1778672248324,
+      "tag": "0009_calm_vulture",
+      "breakpoints": true
     }
   ]
 }

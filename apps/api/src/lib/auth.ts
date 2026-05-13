@@ -37,7 +37,9 @@ export const auth = betterAuth({
   plugins: [
     jwt(),
     bearer(),
-    organization(),
+    organization({
+      requireEmailVerificationOnInvitation: true, 
+    }),
     magicLink({
       sendMagicLink: async ({ email, url }) => {
         await resend.emails.send({
