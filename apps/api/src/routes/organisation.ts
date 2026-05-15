@@ -55,25 +55,4 @@ const [result] = await db
   return c.json(result)
 })
 
-organisationRoute.get('/:organisationId', async (c) => {
-  const { organisationId } = c.req.param()
-
-  const [org] = await db
-    .select({
-      id: organization.id,
-      name: organization.name,
-      slug: organization.slug,
-      logo: organization.logo,
-      createdAt: organization.createdAt,
-    })
-    .from(organization)
-    .where(eq(organization.id, organisationId))
-
-  if (!org) {
-    return c.json({ error: 'Organisation not found' }, 404)
-  }
-
-  return c.json(org)
-})
-
 export default organisationRoute;

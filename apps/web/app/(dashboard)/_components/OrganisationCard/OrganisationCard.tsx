@@ -9,10 +9,10 @@ import MemberTab from './MemberTab/MemberTab'
 import InvitationsTab from './InvitationsTab/InvitationsTab'
 import { useForm } from "react-hook-form"
 import { authClient } from '@/lib/auth-client'
-import useUserOrganisation from '@/hooks/getUserOrganisation/getUserOrganisation'
+import { useOrganisation } from '@/app/providers/organisationProvider'
 
 export default function OrganisationCard() {
-  const { organisation, isLoadingOrganisation } = useUserOrganisation();
+  const { organisation, isLoading: isLoadingOrganisation } = useOrganisation();
   const { register, handleSubmit } = useForm()
 
   const handleAddMember = async (data: { email: string }) => {

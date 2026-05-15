@@ -23,10 +23,10 @@ const fetchUserOrganisation = async () => {
 };
 
 export default function useUserOrganisation() {
-  const {data: organisation, isLoading: isLoadingOrganisation} = useQuery({
+  const {data: organisation, isLoading: isLoadingOrganisation, error} = useQuery({
     queryKey: ['userOrganisation'],
     queryFn: fetchUserOrganisation,
   });
 
-  return {organisation, isLoadingOrganisation};
+  return {organisation, isLoadingOrganisation, error};
 }

@@ -5,6 +5,7 @@ import { authClient } from '@/lib/auth-client'
 import { useQuery } from '@tanstack/react-query'
 import { useRouter } from 'next/navigation'
 import { useEffect } from 'react'
+import { OrganisationProvider } from '../providers/organisationProvider'
 
 type OnboardingStatus = {
   isOnboarded: boolean;
@@ -56,7 +57,9 @@ function ProtectedLayout({
     <div className="flex h-screen bg-neutral-50 ">
       <Sidebar />
       <main className="flex-1 overflow-y-auto p-8 pt-20 lg:pt-8">
-        {children}
+        <OrganisationProvider>
+          {children}
+        </OrganisationProvider>
       </main>
     </div>
   )

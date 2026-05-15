@@ -1,3 +1,4 @@
+import { useOrganisation } from '@/app/providers/organisationProvider';
 import LoadingSpinner from '@/components/ui/loadingSpinner';
 import {API_BASE} from '@/utils/constants';
 import {orgStorage} from '@/utils/org-storage';
@@ -28,12 +29,15 @@ type Member = {
 };
 
 export default function MemberTab() {
-  const org = orgStorage.get();
+  const { organisation, isLoading: isLoadingOrganisation } = useOrganisation()
+
+  console.log('Organisation in MemberTab:', organisation, 'Loading:', isLoadingOrganisation)
+
 
   const {data, isLoading} = useQuery<Member[]>({
-    queryKey: ['organisation', org?.id],
-    queryFn: () => fetchOrg(org!.id),
-    enabled: !!org?.id,
+    queryKey: ['organisation', organisation?.id],
+    queryFn: () => fetchOrg(organisation!.id),
+    enabled: !!organisation?.id,
   });
   return isLoading ? (
     <LoadingSpinner />
