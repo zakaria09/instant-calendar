@@ -19,6 +19,8 @@ export default function SignInPage() {
       callbackURL: `${process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000'}/dashboard`,
     })
 
+    console.log('Sign-in response:', { error })
+
     if (error) {
       setError(error.message ?? 'Something went wrong')
       setLoading(false)

@@ -6,12 +6,41 @@ import journal from '@/public/images/journal.png';
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { getOnboardingStatus, getSession } from '@/lib/auth-server';
+import { API_BASE } from '@/utils/constants';
+import { cookies, headers } from 'next/headers'
+
+const fetchUserOrganisation = async () => {
+  const cookieStore = await cookies()
+  console.log(`${API_BASE}/api/organisation/me`)
+  const res = await fetch(`${API_BASE}/api/organisation/me`, {
+    method: 'GET',
+    headers: {
+      cookie: cookieStore.toString(),
+    },
+    next: { revalidate: 60 }
+  });
+  if (!res.ok) {
+    const body = await res.text()
+    console.error('Organisation fetch failed:', res.status, body)
+    throw new Error('Failed to fetch organisation')
+  }
+  return res.json();
+}
 
 export default async function Home() {
   const session = await getSession()
+  const onboarding = await getOnboardingStatus()
 
   if (session?.user) {
-    const onboarding = await getOnboardingStatus()
+
+    // TODO: If the user has an invitation pending, redirect to the invitation page instead of onboarding
+    const organisation = await fetchUserOrganisation()
+
+    // TODO: Fetch invitations
+    // TODO: check if the user has a pending invitation, redirect to the invitation page
+    console.log('Session:', session)
+
+    console.log('Organisation:', organisation)
 
     if (onboarding?.isOnboarded) {
       redirect('/dashboard')

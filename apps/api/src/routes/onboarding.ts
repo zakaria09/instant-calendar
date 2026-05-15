@@ -261,6 +261,38 @@ onboardingRoutes.get("/invite-status", async (c) => {
   });
 });
 
+// TODO
+// We need to check if the user has a pending invitation before onboarding, if they do, we redirect them to the invitation page instead of onboarding
+// Once they accept or decline the invitation, we check if they are onboarded, if not, we redirect them to onboard onto an organisation
+onboardingRoutes.get("/check-invitations/:organizationId", async (c) => {
+  const { organizationId } = c.req.param();
+  const session = await auth.api.getSession({
+    headers: c.req.raw.headers,
+  });
+
+  if (!session) {
+    return c.json({ error: "Unauthorized" }, 401);
+  }
+
+  const invitationsResult = await auth.api.listInvitations({
+    query: {
+      organizationId,
+    },
+    headers: c.req.raw.headers,
+  });
+
+  const pendingInvite =
+    invitationsResult.find(
+      (inv: { email?: string; status?: string }) =>
+        inv.email === session.user.email && inv.status === "pending"
+    ) ?? null;
+
+  return c.json({
+    hasInvite: !!pendingInvite,
+    invite: pendingInvite,
+  });
+});
+
 // Final step: complete onboarding
 onboardingRoutes.post('/complete', async (c) => {
   const session = await auth.api.getSession({

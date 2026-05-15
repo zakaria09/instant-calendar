@@ -11,10 +11,10 @@ import {
   useSlugAvailability,
 } from '../hooks/useOnboardingMutations';
 import {useDebounce} from '../hooks/useDebounce';
-import {NameStep} from '../components/steps/NameStep';
-import {AvailabilityStep} from '../components/steps/AvailabilityStep';
-import {OrganisationStep} from '../components/steps/OrganisationStep';
-import ServiceStep, { ServiceEntry } from '../components/steps/ServiceStep';
+import {NameStep} from '../_components/steps/NameStep';
+import {AvailabilityStep} from '../_components/steps/AvailabilityStep';
+import {OrganisationStep} from '../_components/steps/OrganisationStep';
+import ServiceStep, { ServiceEntry } from '../_components/steps/ServiceStep';
 import { orgStorage } from '@/utils/org-storage';
 
 const STEPS = ['Your Name', 'Organisation', 'Availability', 'Services'];

@@ -10,6 +10,8 @@ import organisationRoute from './routes/organisation'
 
 const app = new Hono()
 
+console.log('Auth methods:', Object.getOwnPropertyNames(Object.getPrototypeOf(auth)).filter(m => typeof auth[m as keyof typeof auth] === 'function'))
+
 app.use('*', logger())
 app.use('*', cors({
   origin: process.env.WEB_URL ?? 'http://localhost:3000',

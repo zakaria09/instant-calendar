@@ -38,10 +38,21 @@ export const auth = betterAuth({
     jwt(),
     bearer(),
     organization({
-      requireEmailVerificationOnInvitation: true, 
+      async sendInvitationEmail(data) {
+        await resend.emails.send({
+          from: 'noreply@updates.instantcalendar.io',
+          to: data.email,
+          subject: `You've been invited to ${data.organization.name}`,
+          html: `
+        <p>You've been invited to join <strong>${data.organization.name}</strong>.</p>
+        <a href="${process.env.WEB_URL}/invite/${data.id}">Accept Invitation</a>
+      `,
+        })
+      },
+      requireEmailVerificationOnInvitation: true,
     }),
     magicLink({
-      sendMagicLink: async ({ email, url }) => {
+      sendMagicLink: async ({email, url}) => {
         await resend.emails.send({
           from: process.env.EMAIL_FROM!,
           to: email,
@@ -55,7 +66,7 @@ export const auth = betterAuth({
         })
       },
     }),
-  ]
-})
+  ],
+});
 
 export type Auth = typeof auth

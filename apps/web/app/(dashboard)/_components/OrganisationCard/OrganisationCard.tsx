@@ -6,6 +6,7 @@ import { UserPlus, Users, Mail } from 'lucide-react'
 import React from 'react'
 import { Input } from '@/components/ui/input'
 import MemberTab from './MemberTab/MemberTab'
+import InvitationsTab from './InvitationsTab/InvitationsTab'
 import { useForm } from "react-hook-form"
 import { authClient } from '@/lib/auth-client'
 import useUserOrganisation from '@/hooks/getUserOrganisation/getUserOrganisation'
@@ -37,12 +38,12 @@ export default function OrganisationCard() {
       </CardHeader>
 
       <CardContent className='space-y-4'>
-        <div className='flex gap-2'>
+        <div>
           <form
             onSubmit={handleSubmit((data) =>
               handleAddMember(data as {email: string}),
             )}
-            className='flex gap-2 w-full'
+            className='flex sm:flex-row flex-col gap-2 w-full'
           >
             <Input
               type='email'
@@ -73,7 +74,7 @@ export default function OrganisationCard() {
           </TabsContent>
 
           <TabsContent value='invites' className='min-h-25'>
-            <p className='text-neutral-500'>No pending invites.</p>
+            <InvitationsTab organisationId={organisation?.id} />
           </TabsContent>
         </Tabs>
       </CardContent>

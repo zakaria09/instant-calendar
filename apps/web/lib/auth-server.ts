@@ -1,6 +1,29 @@
 import { headers } from 'next/headers'
 
-export async function getSession() {
+interface Session {
+  session: {
+    id: string
+    token: string
+    userId: string
+    activeOrganizationId: string | null
+    expiresAt: string
+    createdAt: string
+    updatedAt: string
+    ipAddress: string
+    userAgent: string
+  }
+  user: {
+    id: string
+    name: string
+    email: string
+    emailVerified: boolean
+    image: string | null
+    createdAt: string
+    updatedAt: string
+  }
+}
+
+export async function getSession(): Promise<Session | null>  {
   const res = await fetch(
     `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/auth/get-session`,
     {
