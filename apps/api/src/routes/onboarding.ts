@@ -1,6 +1,6 @@
 import { Hono } from "hono";
 import { auth } from "../lib/auth";
-import { availability, db, invitation, organization } from "@packages/db";
+import { availability, db, invitation, member, organization } from "@packages/db";
 import { user } from "@packages/db";
 import { eq } from "drizzle-orm";
 import { calendars } from '@packages/db';
@@ -43,7 +43,35 @@ onboardingRoutes.get("/status", async (c) => {
     .from(user)
     .where(eq(user.id, session.user.id));
 
-  return c.json({ isOnboarded: currentUser?.isOnboarded ?? false });
+  const [pendingInvite] = await db
+    .select({
+      invitationId: invitation.id,
+      organizationId: invitation.organizationId,
+      organizationName: organization.name,
+      role: invitation.role,
+    })
+    .from(invitation)
+    .innerJoin(organization, eq(invitation.organizationId, organization.id))
+    .where(
+      and(
+        eq(invitation.email, session.user.email),
+        eq(invitation.status, "pending")
+      )
+    )
+    .limit(1);
+
+    console.log('Pending invite:', pendingInvite)
+
+  const [membership] = await db
+    .select({ organizationId: member.organizationId })
+    .from(member)
+    .where(eq(member.userId, session.user.id));
+
+  return c.json({
+    isOnboarded: currentUser?.isOnboarded ?? false,
+    hasOrganisation: !!membership,
+    pendingInvite: pendingInvite ?? null,
+  });
 });
 
 // Check slug availability (used by the frontend during typing)

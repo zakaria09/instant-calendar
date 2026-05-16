@@ -23,6 +23,19 @@ interface Session {
   }
 }
 
+type PendingInvite = {
+  invitationId: string
+  organizationId: string
+  organizationName: string
+  role: string | null
+}
+
+type OnboardingStatus = {
+  isOnboarded: boolean
+  hasOrganisation: boolean
+  pendingInvite: PendingInvite | null
+}
+
 export async function getSession(): Promise<Session | null>  {
   const res = await fetch(
     `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/auth/get-session`,
@@ -39,7 +52,7 @@ export async function getSession(): Promise<Session | null>  {
   return res.json()
 }
 
-export async function getOnboardingStatus() {
+export async function getOnboardingStatus(): Promise<OnboardingStatus | null> {
   const res = await fetch(
     `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/onboarding/status`,
     {
@@ -53,6 +66,5 @@ export async function getOnboardingStatus() {
 
   if (!res.ok) return null
 
-  const data = (await res.json()) as { isOnboarded?: boolean }
-  return { isOnboarded: Boolean(data?.isOnboarded) }
+  return res.json()
 }

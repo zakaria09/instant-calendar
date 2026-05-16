@@ -24,6 +24,8 @@ export default function AcceptInvite({ invitationId }: { invitationId: string })
     },
   })
 
+  console.log('Invitation data:', invite, 'Loading:', isLoading, 'Error:', isError)
+
   const acceptMutation = useMutation({
     mutationFn: async () => {
       const { error } = await authClient.organization.acceptInvitation({
@@ -63,7 +65,7 @@ export default function AcceptInvite({ invitationId }: { invitationId: string })
 
   return (
     <div className="flex min-h-screen items-center justify-center p-4">
-      <Card className="w-full max-w-md px-6 py-4">
+      <Card className="w-full max-w-md px-6 py-4 text-center">
         {accepted ? (
           <CardContent className="flex flex-col items-center gap-3 py-8">
             <CheckCircle className="h-8 w-8 text-green-500" />
@@ -79,10 +81,10 @@ export default function AcceptInvite({ invitationId }: { invitationId: string })
               </p>
             </CardHeader>
             <CardContent className="flex gap-2">
-              <Button onClick={() => acceptMutation.mutate()} disabled={acceptMutation.isPending} className="flex-1">
+              <Button onClick={() => acceptMutation.mutate()} disabled={acceptMutation.isPending} className="flex-1 cursor-pointer">
                 {acceptMutation.isPending ? <Spinner /> : 'Accept Invitation'}
               </Button>
-              <Button variant="outline" onClick={() => router.push('/')} className="flex-1">
+              <Button variant="outline" onClick={() => router.push('/')} className="flex-1 cursor-pointer">
                 Decline
               </Button>
             </CardContent>
